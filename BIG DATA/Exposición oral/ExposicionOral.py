@@ -132,8 +132,8 @@ plt.plot(x2, y2, color='blue', label="Masculino T1")
 plt.plot(x3, y3, color='red', label="Femenino")
 
 plt.xlabel("Años")
-plt.ylabel("Ingreso Promedio (En dólares)")
-plt.title('Ingreso promedio en el área de servicios en dólares (Oficial)')
+plt.ylabel("Ingreso promedio en Dólares (Valor Oficial)")
+plt.title('Ingreso promedio en el área de Servicios')
 
 plt.legend()
 plt.show()
