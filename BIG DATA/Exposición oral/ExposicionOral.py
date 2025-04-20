@@ -5,8 +5,9 @@ import numpy as np
 import wbdata
 import pandas as pd
 import matplotlib.pyplot as plt
+#Importo todos los .py que pueda llegar a necesitar.
 
-
+#Creamos una función que limpia automaticamente cada año de la base de datos, eliminando columnas vacias y dejando solamente las importantes.
 def limpieza():
     dfs_lim = {}
     for año in range(2015, 2025):
@@ -22,7 +23,7 @@ def limpieza():
         nombres_base = ['Total', 'Varon',
                         'Mujer', 'Distribucion Porcentual']
         if sheet_name == "2024":
-            trimestres = ['T1', 'T2', 'T3']
+            trimestres = ['T1', 'T2', 'T3'] #El año 2024 tiene solamente 3 Trimestres cargados, así que usamos solo 3 columnas para dicho año.
         else:
             trimestres = ['T1', 'T2', 'T3', 'T4']
         nuevos_nombres = [
@@ -31,13 +32,13 @@ def limpieza():
         df = df.fillna("")
         df = df.apply(pd.to_numeric, errors='coerce').round(2)
         dfs_lim[año] = df
-        df.to_excel(f"ExpoOral{año}.xlsx", index=True)
+        df.to_excel(f"IngresosPromedio{año}.xlsx", index=True) #Crea un archivo excel para cada año.
         print(
             f'El año {año} ahora tiene {len(df.columns)} columnas y ha sido limpiado.')
 
     return dfs_lim
 
-
+#Creamos una funcion que itera en cada fila de servicios de todos los años, y las junta en un solo archivo de excel.
 def juntar_fila(row_name, dfs_dict):
     filas = []
     for año, df in dfs_dict.items():
@@ -51,11 +52,11 @@ def juntar_fila(row_name, dfs_dict):
     resultado.to_excel(f"Servicios.xlsx", index=True)
     return resultado
 
-
+#Ejecutamos
 dfs_lim = limpieza()
 datos_servicios = juntar_fila("Servicios", dfs_lim)
 
-
+#Cargamos una base de datos auxiliar, que es el valor del dolar oficial para cada día desde 1970. Limpiamos los datos así me devuelve el valor por cuatrimestre
 def ajuste_dolar():
     df = pd.read_csv("tipos-de-cambio-historicos.csv")
     df = df.set_index('indice_tiempo')
@@ -71,7 +72,7 @@ def ajuste_dolar():
 
     return df_trimestres
 
-
+#Del excel de servicios, limpiamos para que solamente me diga el ingreso promedio, no el porcentaje de ocupados en dicha área. Y llenamos los NaN con un valor.
 df = pd.read_excel(
     "Servicios.xlsx")
 df.columns = df.columns.astype(str)
@@ -82,7 +83,7 @@ df.index.name = 'Años'
 df = df.fillna('1')
 df.to_excel(f"ServiciosDolar.xlsx", index=True)
 
-
+#La base de datos previamente limpiada del Dólar Oficial, la ordenamos por año, así comparte cant. de filas y nombre de índices con la de Servicios.
 def limpieza_dolar():
     valoresdolar = []
     df_total = pd.DataFrame()
@@ -101,7 +102,7 @@ def limpieza_dolar():
     df_total.to_excel("DolarValorTrimestres.xlsx", index=True)
     return valoresdolar
 
-
+#Traemos ambas bases de datos (Dolar Oficial por trimestre) y Servicios. Repetimos columnas así hay misma cantidad de filas y columnas en ambos archivos excel.
 df_dolar = pd.read_excel("DolarValorTrimestres.xlsx", index_col=0).round(2)
 df_servicios = pd.read_excel("ServiciosDolar.xlsx", index_col=0).astype(int)
 df_dolar_ajustado = pd.concat([df_dolar[['T1']], df_dolar[['T1']], df_dolar[['T1']],
@@ -113,10 +114,10 @@ df_dolar_ajustado = pd.concat([df_dolar[['T1']], df_dolar[['T1']], df_dolar[['T1
 nombres = df.columns
 df_dolar_ajustado.columns = nombres
 df_unido = pd.concat([df_servicios, df_dolar_ajustado])
-
+#Creamos un solo archivo que contiene los ingresos promedios divididos por el Dolar oficial en cada trimestre pertinente. 
 df_unido = (df_servicios / df_dolar_ajustado).round(2)
-df_unido.to_excel("archivo_unido.xlsx")
-
+df_unido.to_excel("archivo_unido.xlsx") 
+#Preparamos para crear un gráfico.
 df_unido = df_unido.reset_index()
 print(df_unido)
 
