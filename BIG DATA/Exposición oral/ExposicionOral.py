@@ -102,6 +102,8 @@ def limpieza_dolar():
     df_total.to_excel("DolarValorTrimestres.xlsx", index=True)
     return valoresdolar
 
+limpieza_dolar()
+
 #Traemos ambas bases de datos (Dolar Oficial por trimestre) y Servicios. Repetimos columnas así hay misma cantidad de filas y columnas en ambos archivos excel.
 df_dolar = pd.read_excel("DolarValorTrimestres.xlsx", index_col=0).round(2)
 df_servicios = pd.read_excel("ServiciosDolar.xlsx", index_col=0).astype(int)
