@@ -96,7 +96,6 @@ def limpieza_dolar():
         df_dolar.index = [f'{año}']
         df_dolar.columns = df_dolar_cnombres
         print(df_dolar)
-        df_dolar.to_excel(f"DolarValor{año}.xlsx", index=True)
         df_total = pd.concat([df_total, df_dolar])
         valoresdolar.append(df_dolar.iloc[0].tolist())
     df_total.to_excel("DolarValorTrimestres.xlsx", index=True)
