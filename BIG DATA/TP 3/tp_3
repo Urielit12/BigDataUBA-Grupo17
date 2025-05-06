@@ -10,11 +10,8 @@ def limpieza():
     hg2024 = pd.read_excel('usu_hogar_T124.xlsx')
 
     hg2004 = hg2004.loc[:, ~hg2004.columns.str.contains("idimph")]
-    hg2004.to_excel('Hogar_t104.xlsx')
-
     hg2024 = hg2024.loc[:, ~hg2024.columns.str.contains("PONDIH")]
     hg2024 = hg2024.loc[:, ~hg2024.columns.str.contains("Unnamed")]
-    hg2024.to_excel('usu_hogar_T124.xlsx')
 
     if hg2024.shape[1] == hg2004.shape[1]:
         print(
@@ -32,6 +29,9 @@ def limpieza():
     print(f"Cant. filas 2004: {hg2004.shape[0]}")
     print(f"Cant. filas 2024: {hg2004.shape[0]}")
 
+    hg2004.to_excel('Hogar_t104.xlsx')
+    hg2024.to_excel('usu_hogar_T124.xlsx')
+    return
+
 
 limpieza()
-
