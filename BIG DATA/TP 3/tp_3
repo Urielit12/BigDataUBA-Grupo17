@@ -67,21 +67,25 @@ def limpieza_estado():
     print(
         f"Valores no numéricos únicos en ESTADO (2004):{valores_unicos_2004}")
 
-    ind2004['CH06'] = ind2004['CH06'].astype(str)
-    ind2004['CH06'] = ind2004['CH06'].replace({
+    ind2004['ESTADO'] = ind2004['ESTADO'].astype(str)
+    ind2004['ESTADO'] = ind2004['ESTADO'].replace({
         'Ocupado': 1,
         'Desocupado': 2,
         'Inactivo': 3,
         'Menor de 10 años': 4,
         'Entrevista individual no realizada (no respuesta al cuestion': 0})
-    ind2004['CH06'] = pd.to_numeric(ind2004['CH06'], errors='coerce')
+    ind2004['ESTADO'] = pd.to_numeric(ind2004['ESTADO'], errors='coerce')
 
     valores_unicos_2024 = ind2024['ESTADO'][~ind2024['ESTADO'].apply(
         lambda x: isinstance(x, (int, float)))].unique()
     print(
         f"Valores no numéricos únicos en ESTADO (2024):{valores_unicos_2024}")
 
+    print(f'Valores en ESTADO 2004:{ind2004['ESTADO'].unique()}')
+    print(f'Tipo de valores: {ind2004['ESTADO'].dtype}')
+
     ind2004.to_excel('LimpioINDT12004.xlsx')
+    print('Limpieza guardada.')
 
 
 limpieza_estado()
