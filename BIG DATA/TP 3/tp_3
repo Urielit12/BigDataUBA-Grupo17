@@ -1,11 +1,11 @@
-import os
-from csv import reader, writer
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.stats import norm
+from sklearn.neighbors import KernelDensity
 
-
-def limpieza():
+def limpieza_general():
     ind2004 = pd.read_stata('individual_t104.dta')
     ind2024 = pd.read_excel('usu_individual_T124.xlsx')
     ind2004.set_index('CODUSU', inplace=True)
@@ -29,8 +29,59 @@ def limpieza():
             f'No son iguales: 2024: {ind2024.shape[1]}, 2004:{ind2004.shape[1]}')
     print(f"Cant. filas 2004: {ind2004.shape[0]}")
     print(f"Cant. filas 2024: {ind2024.shape[0]}")
+
     ind2004.to_excel('LimpioINDT12004.xlsx')
     ind2024.to_excel('LimpioINDT12024.xlsx')
+    print("Archivos exportados a Excel.")
 
 
-limpieza()
+limpieza_general()
+
+
+def limpieza_edad():
+    ind2004 = pd.read_excel('LimpioINDT12004.xlsx')
+    # En el año 2004, para la variable CH06, hay valores que no son edad en tipo int.
+    valores_unicos_2004 = ind2004['CH06'][~ind2004['CH06'].apply(
+        lambda x: isinstance(x, (int, float)))].unique()
+    print("Valores no numéricos únicos en CH06 (2004):")
+    print(valores_unicos_2004)
+
+    ind2004['CH06'] = ind2004['CH06'].astype(str)
+    ind2004['CH06'] = ind2004['CH06'].replace({
+        'Menos de 1 año': 0.9,
+        '98 y más años': 99})
+    ind2004['CH06'] = pd.to_numeric(ind2004['CH06'], errors='coerce')
+    print('Valores de edad corregidos.')
+
+
+limpieza_edad()
+
+
+def limpieza_estado():
+
+    ind2004 = pd.read_excel('LimpioINDT12004.xlsx')
+    ind2024 = pd.read_excel('LimpioINDT12024.xlsx')
+
+    valores_unicos_2004 = ind2004['ESTADO'][~ind2004['ESTADO'].apply(
+        lambda x: isinstance(x, (int, float)))].unique()
+    print(
+        f"Valores no numéricos únicos en ESTADO (2004):{valores_unicos_2004}")
+
+    ind2004['CH06'] = ind2004['CH06'].astype(str)
+    ind2004['CH06'] = ind2004['CH06'].replace({
+        'Ocupado': 1,
+        'Desocupado': 2,
+        'Inactivo': 3,
+        'Menor de 10 años': 4,
+        'Entrevista individual no realizada (no respuesta al cuestion': 0})
+    ind2004['CH06'] = pd.to_numeric(ind2004['CH06'], errors='coerce')
+
+    valores_unicos_2024 = ind2024['ESTADO'][~ind2024['ESTADO'].apply(
+        lambda x: isinstance(x, (int, float)))].unique()
+    print(
+        f"Valores no numéricos únicos en ESTADO (2024):{valores_unicos_2024}")
+
+    ind2004.to_excel('LimpioINDT12004.xlsx')
+
+
+limpieza_estado()
