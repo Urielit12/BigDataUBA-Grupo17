@@ -1,3 +1,4 @@
+from matplotlib.lines import Line2D
 import matplotlib.patches as mpatches
 import numpy as np
 import pandas as pd
@@ -37,7 +38,7 @@ def limpieza_general():
     print("Archivos exportados a Excel.")
 
 
-limpieza_general()
+'''limpieza_general()'''
 
 
 def limpieza_edad():
@@ -57,7 +58,7 @@ def limpieza_edad():
     ind2004.to_excel('LimpioINDT12004.xlsx')
 
 
-limpieza_edad()
+'''limpieza_edad()'''
 
 
 def limpieza_estado():
@@ -91,7 +92,7 @@ def limpieza_estado():
     print('Limpieza guardada.')
 
 
-limpieza_estado()
+'''limpieza_estado()'''
 
 # Luego de la limpieza, realizamos lo pedido:
 
@@ -107,7 +108,7 @@ def edad2():
     print(ind2024['edad2'])
 
 
-edad2()
+'''edad2()'''
 
 
 def histograma_kernels():
@@ -146,10 +147,12 @@ def histograma_kernels():
     # Parches para el label de la esquina superior derecha.
     parche_2004 = mpatches.Patch(color='#5799c6', label='2004')
     parche_2024 = mpatches.Patch(color='orange', label='2024')
-    patch_prom04 = mpatches.Patch(color='red', label='Promedio 2004')
-    patch_prom24 = mpatches.Patch(color='green', label='Promedio 2024')
-    axes[0].legend(handles=[parche_2004, parche_2024, patch_prom04,
-                   patch_prom24], title='Año y Promedios')
+    line_prom04 = Line2D([0], [0], color='red',
+                         linestyle='--', label='Promedio 2004')
+    line_prom24 = Line2D([0], [0], color='green',
+                         linestyle='--', label='Promedio 2024')
+    axes[0].legend(handles=[parche_2004, parche_2024, line_prom04,
+                   line_prom24], title='Año y Promedios')
 
     # Kernels.
     sns.kdeplot(ocupados2004, ax=axes[1], label='Ocupados 2004',
