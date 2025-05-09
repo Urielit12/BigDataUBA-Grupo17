@@ -1,9 +1,11 @@
+import matplotlib.patches as mpatches
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import norm
 from sklearn.neighbors import KernelDensity
+
 
 def limpieza_general():
     ind2004 = pd.read_stata('individual_t104.dta')
@@ -89,3 +91,81 @@ def limpieza_estado():
 
 
 limpieza_estado()
+
+# Luego de la limpieza, realizamos lo pedido:
+
+
+def edad2():
+    ind2004 = pd.read_excel('LimpioINDT12004.xlsx')
+    ind2024 = pd.read_excel('LimpioINDT12024.xlsx')
+
+    ind2004['edad2'] = np.square(ind2004['CH06'])
+    ind2024['edad2'] = np.square(ind2024['CH06'])
+
+    print(ind2004['edad2'])
+    print(ind2024['edad2'])
+
+
+edad2()
+
+
+def histograma_kernels():
+    # Cargamos datos.
+    ind2004 = pd.read_excel('LimpioINDT12004.xlsx')
+    ind2024 = pd.read_excel('LimpioINDT12024.xlsx')
+
+    # Variables.
+    ocupados2004 = ind2004.loc[ind2004['ESTADO'] == 1, 'CH06']
+    desocupados2004 = ind2004.loc[ind2004['ESTADO'] == 2, 'CH06']
+    ocupados2024 = ind2024.loc[ind2024['ESTADO'] == 1, 'CH06']
+    desocupados2024 = ind2024.loc[ind2024['ESTADO'] == 2, 'CH06']
+    ind2004 = ind2004[['CH06']].copy()
+    ind2024 = ind2024[['CH06']].copy()
+    ind2004['Año'] = '2004'
+    ind2024['Año'] = '2024'
+    combined = pd.concat([ind2004, ind2024], ignore_index=True)
+    promedio_2004 = np.mean(ind2004['CH06'])
+    promedio_2024 = np.mean(ind2024['CH06'])
+
+    # Figura.
+    fig, axes = plt.subplots(1, 2, figsize=(10, 6))
+
+    # Histograma.
+    sns.histplot(data=combined, x='CH06', ax=axes[0],
+                 hue='Año', bins=25, multiple='stack',
+                 palette={'2004': '#5799c6', '2024': 'orange'})
+    axes[0].set_title('Distribución de edad EPH 2004/2024')
+    axes[0].set_xlabel('Edad')
+    axes[0].set_ylabel('Frecuencia')
+    axes[0].axvline(promedio_2004, linestyle='dashed',
+                    linewidth=1, color='red')
+    axes[0].axvline(promedio_2024, linestyle='dashed',
+                    linewidth=1, color='green')
+    axes[0].set_xticks(np.arange(0, 101, 10))
+    # Parches para el label de la esquina superior derecha.
+    parche_2004 = mpatches.Patch(color='#5799c6', label='2004')
+    parche_2024 = mpatches.Patch(color='orange', label='2024')
+    patch_prom04 = mpatches.Patch(color='red', label='Promedio 2004')
+    patch_prom24 = mpatches.Patch(color='green', label='Promedio 2024')
+    axes[0].legend(handles=[parche_2004, parche_2024, patch_prom04,
+                   patch_prom24], title='Año y Promedios')
+
+    # Kernels.
+    sns.kdeplot(ocupados2004, ax=axes[1], label='Ocupados 2004',
+                fill=True, color='red', bw_method='scott')
+    sns.kdeplot(desocupados2004, ax=axes[1], label='Desocupados 2004',
+                fill=True, color='grey', bw_method='scott')
+    sns.kdeplot(ocupados2024, ax=axes[1], label='Ocupados 2024',
+                fill=True, color='green', bw_method='scott', linestyle='dashed')
+    sns.kdeplot(desocupados2024, ax=axes[1], label='Desocupados 2024',
+                fill=True, color='grey', bw_method='scott', linestyle='dashed')
+    axes[1].set_title('Estimación de Edad por Estado Laboral (2004 vs 2024)')
+    axes[1].set_xlabel('Edad')
+    axes[1].set_ylabel('Densidad estimada')
+    axes[1].legend(title='Grupo')
+
+    plt.tight_layout()
+    plt.show()
+
+
+histograma_kernels()
