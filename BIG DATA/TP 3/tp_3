@@ -54,6 +54,7 @@ def limpieza_edad():
         '98 y más años': 99})
     ind2004['CH06'] = pd.to_numeric(ind2004['CH06'], errors='coerce')
     print('Valores de edad corregidos.')
+    ind2004.to_excel('LimpioINDT12004.xlsx')
 
 
 limpieza_edad()
