@@ -34,10 +34,10 @@ def limpieza_general():
     ind2024 = ind2024[ind2004.columns]
 
     base_completa = pd.concat([ind2004, ind2024], axis=0)
-    variables_elegidas = ['ANO4', 'ESTADO', 'CH04', 'CH06', 'CH14', 'CH12', 'CH13', 'PP04A', 'PP04B_COD',
+    variables_elegidas = ['ANO4', 'ESTADO', 'CH04', 'CH06', 'CH10', 'CH12', 'CH13', 'CH14', 'PP04A', 'PP04B_COD',
                           'PP07C', 'CAT_INAC', 'P21', 'PP3E_TOT', 'PP3F_TOT']
     base_completa = base_completa[variables_elegidas]
-    base_completa.to_excel('BaseLimpiaEPH.xlsx')
+    base_completa.to_excel('BaseLimpiaEPH.xlsx', index=False)
 
     print("Archivo exportado a Excel.")
 
@@ -57,7 +57,7 @@ def limpieza_edad():
                                               .apply(lambda x: isinstance(x, (int, float)))].unique()
     print("Valores no numéricos únicos en CH06 (2004):", no_numeros)
 
-    reemplazos = {'Menos de 1 año': 0.9, '98 y más años': 99}
+    reemplazos = {'Menos de 1 año': 1, '98 y más años': 99}
     series_2004 = ind2004.loc[año2004, 'CH06'].astype(str).replace(reemplazos)
     ind2004.loc[año2004, 'CH06'] = pd.to_numeric(series_2004, errors='coerce')
 
@@ -67,6 +67,7 @@ def limpieza_edad():
 
 
 limpieza_edad()
+
 
 def limpieza_estado():
     Est = pd.read_excel('BaseLimpiaEPH.xlsx')
@@ -100,42 +101,31 @@ limpieza_estado()
 def edad2():
     var_nueva = pd.read_excel('BaseLimpiaEPH.xlsx')
     var_nueva['edad2'] = np.square(var_nueva['CH06'])
-    var_nueva.to_excel('BaseLimpiaEPH.xlsx', index=False)
+    var_nueva.to_excel('BaseLimpiaEPH.xlsx')
     print('Nueva variable edad2 añadida.')
 
 
 edad2()
 
 
-def histograma_kernels():
-    # Cargamos datos.
+def histo_kernel():
     df = pd.read_excel('BaseLimpiaEPH.xlsx')
 
-    ocupados2004 = df.loc[(df['ESTADO'] == 1) & (
-        df['ANO4'] == 2004), 'CH06'].dropna().astype(float)
-    desocupados2004 = df.loc[(df['ESTADO'] == 2) & (
-        df['ANO4'] == 2004), 'CH06'].dropna().astype(float)
-    ocupados2024 = df.loc[(df['ESTADO'] == 1) & (
-        df['ANO4'] == 2024), 'CH06'].dropna().astype(float)
-    desocupados2024 = df.loc[(df['ESTADO'] == 2) & (
-        df['ANO4'] == 2024), 'CH06'].dropna().astype(float)
-    df2004 = pd.DataFrame(
-        {'CH06': pd.concat([ocupados2004, desocupados2004]), 'ANO4': '2004'})
-    df2024 = pd.DataFrame(
-        {'CH06': pd.concat([ocupados2024, desocupados2024]), 'ANO4': '2024'})
-    combined = pd.concat([df2004, df2024], ignore_index=True)
-
-    # Promedios
-    promedio_2004 = df2004['CH06'].mean()
-    promedio_2024 = df2024['CH06'].mean()
+    # Variables Histograma.
+    edades2004 = df.loc[df['ANO4'] == 2004, 'CH06']
+    edades2024 = df.loc[df['ANO4'] == 2024, 'CH06']
+    df2004 = pd.DataFrame({'CH06': edades2004, 'ANO4': '2004'})
+    df2024 = pd.DataFrame({'CH06': edades2024, 'ANO4': '2024'})
+    combinado_edades = pd.concat([df2004, df2024], ignore_index=True)
+    promedio_2004 = edades2004.mean()
+    promedio_2024 = edades2024.mean()
 
     # Figura.
     fig, axes = plt.subplots(1, 2, figsize=(10, 6))
 
     # Histograma.
-    sns.histplot(data=combined, x='CH06', ax=axes[0],
-                 hue='ANO4', bins=25, multiple='stack',
-                 palette={'2004': '#5799c6', '2024': 'orange'})
+    sns.histplot(data=combinado_edades, x='CH06', ax=axes[0], hue='ANO4', bins=25, multiple='stack', palette={
+        '2004': '#5799c6', '2024': 'orange'})
     axes[0].set_title('Distribución de edad EPH 2004/2024')
     axes[0].set_xlabel('Edad')
     axes[0].set_ylabel('Frecuencia')
@@ -144,7 +134,6 @@ def histograma_kernels():
     axes[0].axvline(promedio_2024, linestyle='dashed',
                     linewidth=1, color='green')
     axes[0].set_xticks(np.arange(0, 101, 10))
-    # Parches para el label de la esquina superior derecha.
     parche_2004 = mpatches.Patch(color='#5799c6', label='2004')
     parche_2024 = mpatches.Patch(color='orange', label='2024')
     line_prom04 = Line2D([0], [0], color='red',
@@ -152,25 +141,32 @@ def histograma_kernels():
     line_prom24 = Line2D([0], [0], color='green',
                          linestyle='--', label='Promedio 2024')
     axes[0].legend(handles=[parche_2004, parche_2024, line_prom04,
-                   line_prom24], title='Año y Promedios')
+                            line_prom24], title='Año y Promedios')
 
     # Kernels.
-    sns.kdeplot(ocupados2004, ax=axes[1], label='Ocupados 2004',
+    ocu2004 = df.loc[(df['ESTADO'] == 1) & (
+        df['ANO4'] == 2004), 'CH06']
+    desoc2004 = df.loc[(df['ESTADO'] == 2) & (
+        df['ANO4'] == 2004), 'CH06']
+    ocu2024 = df.loc[(df['ESTADO'] == 1) & (
+        df['ANO4'] == 2024), 'CH06']
+    desoc2024 = df.loc[(df['ESTADO'] == 2) & (
+        df['ANO4'] == 2024), 'CH06']
+    sns.kdeplot(ocu2004, ax=axes[1], label='Ocupados 2004',
                 fill=True, color='red', bw_method='scott')
-    sns.kdeplot(desocupados2004, ax=axes[1], label='Desocupados 2004',
+    sns.kdeplot(desoc2004, ax=axes[1], label='Desocupados 2004',
                 fill=True, color='grey', bw_method='scott')
-    sns.kdeplot(ocupados2024, ax=axes[1], label='Ocupados 2024',
+    sns.kdeplot(ocu2024, ax=axes[1], label='Ocupados 2024',
                 fill=True, color='green', bw_method='scott', linestyle='dashed')
-    sns.kdeplot(desocupados2024, ax=axes[1], label='Desocupados 2024',
+    sns.kdeplot(desoc2024, ax=axes[1], label='Desocupados 2024',
                 fill=True, color='grey', bw_method='scott', linestyle='dashed')
-    axes[1].set_title('Estimación de Edad por Estado Laboral (2004 vs 2024)')
+    axes[1].set_title('Estimación de Edad por Estado Laboral 2004/2024')
     axes[1].set_xlabel('Edad')
     axes[1].set_ylabel('Densidad estimada')
     axes[1].legend(title='Grupo')
 
     plt.tight_layout()
     plt.show()
-    plt.savefig('Histo_Kernels.png')
 
+histo_kernel()
 
-histograma_kernels()
