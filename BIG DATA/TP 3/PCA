@@ -13,7 +13,7 @@ import numpy as np
 # Base ya limpiada
 df = pd.read_excel("BaseParteUnoEPH.xlsx")
 
-variables = ['CH06', 'edad2', 'educ', 'salario_semanal', 'horastrab']
+variables = ["CH06", "edad2", "educ", "salario_semanal", "horastrab"]
 df_eph = df[variables].dropna() # Se agarran solo las variables y elimina valores faltantes
 
 # Transformación de variables (media 0, desvío 1) 
@@ -41,13 +41,13 @@ i, j = 0, 1  # PC1 y PC2
 # Creamos el gráfico
 fig, ax = plt.subplots(figsize=(7, 7))
 ax.scatter(scores[:,0], scores[:,1])
-ax.set_xlabel('ComponentePrincipal%d' % (i+1))
-ax.set_ylabel('ComponentePrincipa2%d' % (j+1))
-ax.set_title('Análisis de los componentes principales 1 y 2')
+ax.set_xlabel("ComponentePrincipal%d" % (i+1))
+ax.set_ylabel("ComponentePrincipa2%d" % (j+1))
+ax.set_title("Análisis de los componentes principales 1 y 2")
 
 # Agregamos las flechas (loadings)
 for k in range(pca.components_.shape[1]):
-    ax.arrow(0, 0, pca.components_[i, k], pca.components_[j, k], color='red')
+    ax.arrow(0, 0, pca.components_[i, k], pca.components_[j, k], color="red")
     ax.text(pca.components_[i, k]*1.1, pca.components_[j, k]*1.1, eph_estandar.columns[k])
 
 
