@@ -170,3 +170,78 @@ def histo_kernel():
 
 histo_kernel()
 
+def educ_limpieza():
+    df = pd.read_excel('BaseLimpiaEPH.xlsx')
+    df['CH10'] = df['CH10'].astype(str)
+    df['CH10'] = df['CH10'].replace({
+        'No asiste, pero asistió': 2,
+        'Sí, asiste': 1,
+        'Nunca asistió': 3,
+        'Ns./Nr.': 9})
+    df['CH10'] = pd.to_numeric(df['CH10'], errors='coerce')
+
+    df['CH12'] = df['CH12'].astype(str).dropna()
+    df['CH12'] = df['CH12'].replace({
+        'Secundario': 4,
+        'Primario': 2,
+        'Universitario': 7,
+        'Terciario': 6,
+        'Jardín/Preescolar': 1,
+        'Polimodal': 5,
+        'EGB': 3,
+        'Educación especial (discapacitado)': 9,
+        'Ns./Nr.': 9,
+        '99': 9})
+    df['CH12'] = pd.to_numeric(df['CH12'], errors='coerce')
+
+    df['CH13'] = df['CH13'].astype(str)
+    df['CH13'] = df['CH13'].replace({
+        'No': 2,
+        'Sí': 1,
+        'Ns./Nr.': 9})
+    df['CH13'] = pd.to_numeric(df['CH13'], errors='coerce')
+
+    df['CH14'] = df['CH14'].replace({i: f'0{i}' for i in range(0, 10)})
+    df['CH14'] = pd.to_numeric(df['CH14'], errors='coerce')
+
+    df = df.fillna(0)
+
+    print(f'Valores en CH10:{df['CH10'].unique()}')
+    print(f'Valores en CH12:{df['CH12'].unique()}')
+    print(f'Valores en CH13:{df['CH13'].unique()}')
+    print(f'Valores en CH14:{df['CH14'].unique()}')
+
+    def educ(row):
+        if row['CH10'] in [1, 2]:
+            if row['CH12'] == 1:
+                return row['CH14']
+            elif row['CH12'] == 2:
+                return 3 + row['CH14']
+            elif row['CH12'] == 3:
+                return 3 + row['CH14']
+            elif row['CH12'] == 4:
+                return 3 + 6 + row['CH14']
+            elif row['CH12'] == 5:
+                return 3 + 8 + row['CH14']
+            elif row['CH12'] == 6:
+                return 12 + row['CH14']
+            elif row['CH12'] == 7:
+                return 15 + row['CH14']
+            elif row['CH12'] == 8:
+                return 17 + row['CH14']
+            elif row['CH12'] == 9:
+                return 6
+            else:
+                return None
+        elif row['CH10'] == 3:
+            return 0
+        else:
+            return None
+
+    df['educ'] = df.apply(educ, axis=1)
+    df.to_excel('BaseLimpiaEPH.xlsx', index=False)
+    print('Variable "educ" añadida.')
+
+
+educ_limpieza()
+
