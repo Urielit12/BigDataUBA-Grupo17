@@ -7,6 +7,8 @@ import seaborn as sns
 from scipy.stats import norm
 from sklearn.neighbors import KernelDensity
 
+# Funcion de limpieza general: Creamos una unica base completa en un excel, con mismas columnas y en el mismo orden.
+
 
 def limpieza_general():
     ind2004 = pd.read_stata('individual_t104.dta')
@@ -44,6 +46,8 @@ def limpieza_general():
 
 limpieza_general()
 
+# Limpiamos la variable "CH06" (Edad) para que solo tenga valores numéricos.
+
 
 def limpieza_edad():
     ind2004 = pd.read_excel('BaseLimpiaEPH.xlsx')
@@ -67,6 +71,8 @@ def limpieza_edad():
 
 
 limpieza_edad()
+
+# Limpiamos la variable "Estado" para que solo tenga valores numéricos en cuanto a la ocupación, desocupación y otros resultados.
 
 
 def limpieza_estado():
@@ -96,6 +102,7 @@ def limpieza_estado():
 limpieza_estado()
 
 # Luego de la limpieza, realizamos lo pedido:
+# Creamos la variable "edad2", que es todas las edades elevadas al cuadrado, y añadimos la columna a la base.
 
 
 def edad2():
@@ -107,11 +114,13 @@ def edad2():
 
 edad2()
 
+# Creamos una función que, sobre la base general, crea un histograma de edades y un kernels de ocupados/desocupados.
+
 
 def histo_kernel():
     df = pd.read_excel('BaseLimpiaEPH.xlsx')
 
-    # Variables Histograma.
+    # Variables para el Histograma.
     edades2004 = df.loc[df['ANO4'] == 2004, 'CH06']
     edades2024 = df.loc[df['ANO4'] == 2024, 'CH06']
     df2004 = pd.DataFrame({'CH06': edades2004, 'ANO4': '2004'})
@@ -134,6 +143,7 @@ def histo_kernel():
     axes[0].axvline(promedio_2024, linestyle='dashed',
                     linewidth=1, color='green')
     axes[0].set_xticks(np.arange(0, 101, 10))
+    # Se usa patches y line2D para personalizar los labels.
     parche_2004 = mpatches.Patch(color='#5799c6', label='2004')
     parche_2024 = mpatches.Patch(color='orange', label='2024')
     line_prom04 = Line2D([0], [0], color='red',
@@ -145,6 +155,7 @@ def histo_kernel():
 
     # Kernels.
     ocu2004 = df.loc[(df['ESTADO'] == 1) & (
+        # Filtramos el Estado para ocupados/desocupados, y 2004/2024.
         df['ANO4'] == 2004), 'CH06']
     desoc2004 = df.loc[(df['ESTADO'] == 2) & (
         df['ANO4'] == 2004), 'CH06']
@@ -167,8 +178,13 @@ def histo_kernel():
 
     plt.tight_layout()
     plt.show()
+    plt.savefig('Histo_Kernels.png')
+
 
 histo_kernel()
+
+# Limpiamos base en las variables "CH10", "CH12", "CH13" y "CH14" para crear la variable "educ" (Cant. de años de educación.)
+
 
 def educ_limpieza():
     df = pd.read_excel('BaseLimpiaEPH.xlsx')
@@ -206,49 +222,64 @@ def educ_limpieza():
 
     df = df.dropna()
 
+    # Chequeamos los valores unicos de cada variable luego de limpiar.
     print(f'Valores en CH10:{df['CH10'].unique()}')
     print(f'Valores en CH12:{df['CH12'].unique()}')
     print(f'Valores en CH13:{df['CH13'].unique()}')
     print(f'Valores en CH14:{df['CH14'].unique()}')
 
+    # Creamos una función que, en caso de que asista o hayaa asistido a alguna institución de educación, -
+    # nos devuelva distintos valores en cada una. Si asiste o asistió a secundaria como última institución -
+    # se hace 6 (Por primaria) + el último año cursado.
+
     def educ(row):
-        if row['CH10'] in [1, 2]:
+        if row['CH10'] in [1, 2]:  # Si asiste o asistió a alguna institución:
             if row['CH14'] in [99, 98]:
-                return 0
+                # Educación especial, devuelvo 6 al no conocer cuantos años es su educación.
+                return 6
             else:
+                # No contamos jardín como años de educación.
                 if row['CH12'] == 1:
-                    return row['CH14']
+                    return 0
+                # Primaria, al consultar por ultimo año cursado, esa es su cantidad de años.
                 elif row['CH12'] == 2:
-                    return 3 + row['CH14']
+                    return row['CH14']
+                # EGB, cant. de años maximo es 8, dirá los años cursados en su respuesta de 'CH14
                 elif row['CH12'] == 3:
-                    return 3 + row['CH14']
+                    return row['CH14']
+                # Secundaria, 6 de primaria + ultimo año cursado.
                 elif row['CH12'] == 4:
-                    return 9 + row['CH14']
+                    return 6 + row['CH14']
+                # Polimodal, 8 años de EGB + ultimo año cursado.
                 elif row['CH12'] == 5:
-                    return 11 + row['CH14']
+                    return 8 + row['CH14']
+                # Terciario, 12 años de primaria y secundaria + ultimo año cursado.
                 elif row['CH12'] == 6:
                     return 12 + row['CH14']
-                elif row['CH12'] == 7:
-                    return 15 + row['CH14']
+                elif row['CH12'] == 7:  # Univ, lo mismo que terciario.
+                    return 12 + row['CH14']
+                # Posgrado, asumo 5 años de educación universitaria: 17 + ultimo año cursado
                 elif row['CH12'] == 8:
                     return 17 + row['CH14']
-                elif row['CH12'] == 9:
+                elif row['CH12'] == 9:  # Ed. especial, asumo 6.
                     return 6
                 else:
                     return None
-        elif row['CH10'] == 3:
+        elif row['CH10'] == 3:  # Si nunca asistió, 0 años de educación.
             return 0
         else:
             return None
     df['educ'] = df.apply(educ, axis=1)
-    df.to_excel('BaseLimpiaEPH.xlsx', index=False)
+    df.to_excel('BaseLimpiaEPH.xlsx', index=False)  # Guardamos la variable.
     print('Variable "educ" añadida.')
 
 
 educ_limpieza()
 
+# Estadística descriptiva de la variable educ.
 
-def est_descriptiva():
+
+def est_descriptiva_educ():
     df = pd.read_excel('BaseLimpiaEPH.xlsx')
     media = np.mean(df['educ']).round(2)
     var = np.var(df['educ'], ddof=1).round(2)
@@ -265,4 +296,5 @@ def est_descriptiva():
     print(f'El percentil 50 de años de educación es: {p50}')
 
 
-est_descriptiva()
+est_descriptiva_educ()
+
