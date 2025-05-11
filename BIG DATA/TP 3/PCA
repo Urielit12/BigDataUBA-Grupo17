@@ -53,7 +53,7 @@ for k in range(pca.components_.shape[1]):
 
 
 # % de la Varianza explicada por los componentes 
-print(pca.explained_variance_ratio_) # CP1 explica el 62% de la varianza
+print(pca.explained_variance_ratio_)
 
 # Análisis de la varianza explicada por los componentes
 
