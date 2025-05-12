@@ -271,6 +271,7 @@ def educ_limpieza():
     df.to_excel('BaseLimpiaEPH.xlsx', index=False)  # Guardamos la variable.
     print('Variable "educ" añadida.')
 
+educ_limpieza()
 
 # Estadística descriptiva de la variable educ.
 
@@ -292,6 +293,8 @@ def est_descriptiva_educ():
     print(f'El máximo de años de educación es: {max}')
     print(f'El percentil 50 de años de educación es: {p50}')
     df.to_excel('BaseLimpiaEPH.xlsx', index=False)
+
+est_descriptiva_educ(
 
 # Para poder comparar el ingreso semanal de 2004 al de 2024, decidimos compararlos teniendo en base el aumento-
 # del salario minimo vital y móvil:
