@@ -316,13 +316,13 @@ def salario_semanal():
 
     df = pd.read_excel('BaseLimpiaEPH.xlsx')
     df.loc[(df['ANO4'] == 2004) & (df['P21'] > 0), 'salario_semanal'] = (
-        df.loc[(df['ANO4'] == 2004) & (df['P21'] > 0), 'P21'] * pp) / 40
-    df.loc[(df['ANO4'] == 2024) & (df['P21'] > 0), 'salario_semanal'] = (
-        df.loc[(df['ANO4'] == 2024) & (df['P21'] > 0), 'P21']) / 40
+        df.loc[(df['ANO4'] == 2004) & (df['P21'] > 0), 'P21'] * pp / 21.65) * 5
+    df.loc[(df['ANO4'] == 2024) & (df['P21'] > 0), 'salario_semanal'] = ((
+        df.loc[(df['ANO4'] == 2024) & (df['P21'] > 0), 'P21']) / 21.65) * 5
     df.to_excel('BaseLimpiaEPH.xlsx', index=False)
     print('Ajuste hecho')
     prom_2004 = np.mean((df.loc[(df['ANO4'] == 2004) & (
-        df['salario_semanal'] != 0), 'salario_semanal'])*40)
+        df['salario_semanal'] != 0), 'salario_semanal']) * 4.33)
     prom_2024 = np.mean(df.loc[(df['ANO4'] == 2024) & (df['P21'] != 0), 'P21'])
 
     # Chequeamos los promedios para verificar que las cantidades no sean absurdas tras el ajuste.
