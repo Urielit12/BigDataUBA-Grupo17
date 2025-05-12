@@ -225,15 +225,21 @@ def educ_limpieza():
     print(f'Valores en CH12:{df['CH12'].unique()}')
     print(f'Valores en CH13:{df['CH13'].unique()}')
     print(f'Valores en CH14:{df['CH14'].unique()}')
+    df.to_excel('BaseLimpiaEPH.xlsx', index=False)
 
     # Creamos una función que, en caso de que asista o hayaa asistido a alguna institución de educación, -
     # nos devuelva distintos valores en cada una. Si asiste o asistió a secundaria como última institución -
     # se hace 6 (Por primaria) + el último año cursado.
 
+edduc_limpieza()
+
+def educ():
+    df = pd.read_excel('BaseLimpiaEPH.xlsx')
+
     def educ(row):
-        if row['CH10'] in [1, 2]:  # Si asiste o asistió a alguna institución:
+        if row['CH10'] in [1]:  # Si asiste a alguna institución:
             if row['CH14'] in [99, 98]:
-                # Educación especial, devuelvo 6 al no conocer cuantos años es su educación.
+                # Educación especial.
                 return 6
             else:
                 # No contamos jardín como años de educación.
@@ -260,10 +266,75 @@ def educ_limpieza():
                 elif row['CH12'] == 8:
                     return 17 + row['CH14']
                 elif row['CH12'] == 9:  # Ed. especial, asumo 6.
-                    return 6
+                    return row['CH14']
                 else:
                     return 0
-        elif row['CH10'] == 3:  # Si nunca asistió, 0 años de educación.
+        elif row['CH10'] in [2]:
+            if row['CH13'] in [1]:
+                if row['CH14'] in [99, 98]:
+                    # Educación especial.
+                    return 6
+                else:
+                    # No contamos jardín como años de educación.
+                    if row['CH12'] == 1:
+                        return 0
+                    # Primaria, al consultar por ultimo año cursado, esa es su cantidad de años.
+                    elif row['CH12'] == 2:
+                        return 6
+                    # EGB, cant. de años maximo es 8, dirá los años cursados en su respuesta de 'CH14'
+                    elif row['CH12'] == 3:
+                        return 8
+                    # Secundaria, 6 de primaria + ultimo año cursado.
+                    elif row['CH12'] == 4:
+                        return 12
+                    # Polimodal, 8 años de EGB + ultimo año cursado.
+                    elif row['CH12'] == 5:
+                        return 11
+                    # Terciario, 12 años de primaria y secundaria + ultimo año cursado.
+                    elif row['CH12'] == 6:
+                        return 15
+                    elif row['CH12'] == 7:  # Univ, lo mismo que terciario.
+                        return 17
+                    # Posgrado, asumo 5 años de educación universitaria: 17 + ultimo año cursado
+                    elif row['CH12'] == 8:
+                        return 18
+                    elif row['CH12'] == 9:  # Ed. especial.
+                        return 6
+                    else:
+                        return 0
+            elif row['CH13'] in [2]:
+                if row['CH14'] in [99, 98]:
+                    # Educación especial.
+                    return 6
+                else:
+                    # No contamos jardín como años de educación.
+                    if row['CH12'] == 1:
+                        return 0
+                    # Primaria, al consultar por ultimo año cursado, esa es su cantidad de años.
+                    elif row['CH12'] == 2:
+                        return row['CH14']
+                    # EGB, cant. de años maximo es 8, dirá los años cursados en su respuesta de 'CH14'
+                    elif row['CH12'] == 3:
+                        return row['CH14']
+                    # Secundaria, 6 de primaria + ultimo año cursado.
+                    elif row['CH12'] == 4:
+                        return 6 + row['CH14']
+                    # Polimodal, 8 años de EGB + ultimo año cursado.
+                    elif row['CH12'] == 5:
+                        return 8 + row['CH14']
+                    # Terciario, 12 años de primaria y secundaria + ultimo año cursado.
+                    elif row['CH12'] == 6:
+                        return 12 + row['CH14']
+                    elif row['CH12'] == 7:  # Univ, lo mismo que terciario.
+                        return 12 + row['CH14']
+                    # Posgrado, asumo 5 años de educación universitaria: 17 + ultimo año cursado
+                    elif row['CH12'] == 8:
+                        return 17 + row['CH14']
+                    elif row['CH12'] == 9:  # Ed. especial.
+                        return row['CH14']
+                    else:
+                        return 0
+        elif row['CH10'] in [3]:  # Si nunca asistió, 0 años de educación.
             return 0
         else:
             return 0
@@ -271,7 +342,7 @@ def educ_limpieza():
     df.to_excel('BaseLimpiaEPH.xlsx', index=False)  # Guardamos la variable.
     print('Variable "educ" añadida.')
 
-educ_limpieza()
+educ()
 
 # Estadística descriptiva de la variable educ.
 
