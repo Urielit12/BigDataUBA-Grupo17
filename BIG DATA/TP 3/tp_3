@@ -248,7 +248,7 @@ def educ():
                 # Primaria, al consultar por ultimo año cursado, esa es su cantidad de años.
                 elif row['CH12'] == 2:
                     return row['CH14']
-                # EGB, cant. de años maximo es 8, dirá los años cursados en su respuesta de 'CH14'
+                # EGB, cant. de años maximo es 9, dirá los años cursados en su respuesta de 'CH14'
                 elif row['CH12'] == 3:
                     return row['CH14']
                 # Secundaria, 6 de primaria + ultimo año cursado.
@@ -256,7 +256,7 @@ def educ():
                     return 6 + row['CH14']
                 # Polimodal, 8 años de EGB + ultimo año cursado.
                 elif row['CH12'] == 5:
-                    return 8 + row['CH14']
+                    return 9 + row['CH14']
                 # Terciario, 12 años de primaria y secundaria + ultimo año cursado.
                 elif row['CH12'] == 6:
                     return 12 + row['CH14']
@@ -278,24 +278,24 @@ def educ():
                     # No contamos jardín como años de educación.
                     if row['CH12'] == 1:
                         return 0
-                    # Primaria, al consultar por ultimo año cursado, esa es su cantidad de años.
+                    # Primaria
                     elif row['CH12'] == 2:
                         return 6
-                    # EGB, cant. de años maximo es 8, dirá los años cursados en su respuesta de 'CH14'
+                    # EGB, cant. de años maximo es 9
                     elif row['CH12'] == 3:
-                        return 8
-                    # Secundaria, 6 de primaria + ultimo año cursado.
+                        return 9
+                    # Secundaria, 6 de primaria + 6
                     elif row['CH12'] == 4:
                         return 12
-                    # Polimodal, 8 años de EGB + ultimo año cursado.
+                    # Polimodal, 8 años de EGB + 3
                     elif row['CH12'] == 5:
-                        return 11
+                        return 12
                     # Terciario, 12 años de primaria y secundaria + ultimo año cursado.
                     elif row['CH12'] == 6:
                         return 15
                     elif row['CH12'] == 7:  # Univ, lo mismo que terciario.
                         return 17
-                    # Posgrado, asumo 5 años de educación universitaria: 17 + ultimo año cursado
+                    # Posgrado, asumo 5 años de educación universitaria: 17 + 1 de posgrado.
                     elif row['CH12'] == 8:
                         return 18
                     elif row['CH12'] == 9:  # Ed. especial.
@@ -313,15 +313,15 @@ def educ():
                     # Primaria, al consultar por ultimo año cursado, esa es su cantidad de años.
                     elif row['CH12'] == 2:
                         return row['CH14']
-                    # EGB, cant. de años maximo es 8, dirá los años cursados en su respuesta de 'CH14'
+                    # EGB, cant. de años maximo es 9, dirá los años cursados en su respuesta de 'CH14'
                     elif row['CH12'] == 3:
                         return row['CH14']
                     # Secundaria, 6 de primaria + ultimo año cursado.
                     elif row['CH12'] == 4:
                         return 6 + row['CH14']
-                    # Polimodal, 8 años de EGB + ultimo año cursado.
+                    # Polimodal, 9 años de EGB + ultimo año cursado.
                     elif row['CH12'] == 5:
-                        return 8 + row['CH14']
+                        return 9 + row['CH14']
                     # Terciario, 12 años de primaria y secundaria + ultimo año cursado.
                     elif row['CH12'] == 6:
                         return 12 + row['CH14']
