@@ -220,8 +220,6 @@ def educ_limpieza():
     df['CH14'] = df['CH14'].replace({i: f'0{i}' for i in range(0, 10)})
     df['CH14'] = pd.to_numeric(df['CH14'], errors='coerce')
 
-    df = df.dropna()
-
     # Chequeamos los valores unicos de cada variable luego de limpiar.
     print(f'Valores en CH10:{df['CH10'].unique()}')
     print(f'Valores en CH12:{df['CH12'].unique()}')
@@ -244,7 +242,7 @@ def educ_limpieza():
                 # Primaria, al consultar por ultimo año cursado, esa es su cantidad de años.
                 elif row['CH12'] == 2:
                     return row['CH14']
-                # EGB, cant. de años maximo es 8, dirá los años cursados en su respuesta de 'CH14
+                # EGB, cant. de años maximo es 8, dirá los años cursados en su respuesta de 'CH14'
                 elif row['CH12'] == 3:
                     return row['CH14']
                 # Secundaria, 6 de primaria + ultimo año cursado.
@@ -264,23 +262,22 @@ def educ_limpieza():
                 elif row['CH12'] == 9:  # Ed. especial, asumo 6.
                     return 6
                 else:
-                    return None
+                    return 0
         elif row['CH10'] == 3:  # Si nunca asistió, 0 años de educación.
             return 0
         else:
-            return None
+            return 0
     df['educ'] = df.apply(educ, axis=1)
     df.to_excel('BaseLimpiaEPH.xlsx', index=False)  # Guardamos la variable.
     print('Variable "educ" añadida.')
 
 
-educ_limpieza()
-
 # Estadística descriptiva de la variable educ.
 
 
 def est_descriptiva_educ():
-    df = pd.read_excel('BaseLimpiaEPH.xlsx')
+    df = pd.read_excel('BaseLimpiaEPH.xlsx').fillna(0)
+    df['educ'] = df['educ'].fillna(0)
     media = np.mean(df['educ']).round(2)
     var = np.var(df['educ'], ddof=1).round(2)
     desv = np.sqrt(var).round(2)
@@ -294,9 +291,7 @@ def est_descriptiva_educ():
     print(f'El mínimo de años de educación es: {min}')
     print(f'El máximo de años de educación es: {max}')
     print(f'El percentil 50 de años de educación es: {p50}')
-
-
-est_descriptiva_educ()
+    df.to_excel('BaseLimpiaEPH.xlsx', index=False)
 
 # Para poder comparar el ingreso semanal de 2004 al de 2024, decidimos compararlos teniendo en base el aumento-
 # del salario minimo vital y móvil:
