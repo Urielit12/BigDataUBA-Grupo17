@@ -11,7 +11,8 @@ import numpy as np
 
 
 # Base ya limpiada
-df = pd.read_excel("BaseParteUnoEPH.xlsx")
+df = pd.read_excel("BaseLimpiaEPH.xlsx")
+df['horastrab'] = df['PP3E_TOT'] + df['PP3F_TOT']
 
 variables = ["CH06", "edad2", "educ", "salario_semanal", "horastrab"]
 df_eph = df[variables].dropna() # Se agarran solo las variables y elimina valores faltantes
@@ -40,15 +41,21 @@ i, j = 0, 1  # PC1 y PC2
 
 # Creamos el gráfico
 fig, ax = plt.subplots(figsize=(7, 7))
-ax.scatter(scores[:,0], scores[:,1])
-ax.set_xlabel("ComponentePrincipal%d" % (i+1))
-ax.set_ylabel("ComponentePrincipa2%d" % (j+1))
+ax.scatter(scores[:,0], scores[:,1], alpha=0.5, s=5)
+ax.set_xlabel("Componente Principal %d" % (i+1))
+ax.set_ylabel("Componente Principal %d" % (j+1))
 ax.set_title("Análisis de los componentes principales 1 y 2")
+ax.set_ylim(-2, 6)  # Ajustar según el rango donde estén la mayoría de los puntos
+ax.set_xlim(-2.5, 6)
 
-# Agregamos las flechas (loadings)
+# Escalamos los loadings para que sean visibles
+scale_factor = 5
+
 for k in range(pca.components_.shape[1]):
-    ax.arrow(0, 0, pca.components_[i, k], pca.components_[j, k], color="red")
-    ax.text(pca.components_[i, k]*1.1, pca.components_[j, k]*1.1, eph_estandar.columns[k])
+    x = pca.components_[i, k] * scale_factor
+    y = pca.components_[j, k] * scale_factor
+    ax.arrow(0, 0, x, y, color="red", head_width=0.2)
+    ax.text(x * 1.1, y * 1.1, eph_estandar.columns[k], color="black", ha='center', va='center', fontweight='bold')
 
 
 
@@ -61,13 +68,19 @@ print(pca.explained_variance_ratio_)
 fig, axes = plt.subplots(1, 2, figsize=(10, 4))
 ticks = np.arange(1, pca.n_components_ + 1)
 
+for i, v in enumerate(pca.explained_variance_ratio_):
+    axes[0].text(ticks[i], v + 0.02, f"{v:.2f}", ha='center')
+
+for i, v in enumerate(np.cumsum(pca.explained_variance_ratio_)):
+    axes[1].text(ticks[i], v + 0.02, f"{v:.2f}", ha='center')
+
 # Subplot A: proporción individual de varianza explicada
 axes[0].plot(ticks, pca.explained_variance_ratio_, marker="o", color="red")
 axes[0].set_title("Proporción de varianza explicada por componente")
 axes[0].set_xlabel("Componente principal")
 axes[0].set_ylabel("Proporción")
 axes[0].set_xticks(ticks)
-axes[0].set_ylim([0, 1])
+axes[0].set_ylim([0,1])
 
 # Subplot B: suma acumulada de varianza explicada
 axes[1].plot(ticks, np.cumsum(pca.explained_variance_ratio_), marker="o", color="green")
@@ -75,6 +88,6 @@ axes[1].set_title("Varianza explicada acumulada")
 axes[1].set_xlabel("Componente principal")
 axes[1].set_ylabel("Suma acumulada")
 axes[1].set_xticks(ticks)
-axes[1].set_ylim([0, 1])
+axes[1].set_ylim([0, 1.1])
 fig
 
