@@ -355,7 +355,7 @@ def salario_semanal():
                     linewidth=1, color='red')
     axes[0].axvline(prom24, linestyle='dashed',
                     linewidth=1, color='green')
-    axes[0].set_xticks(np.arange(0, 30001, 5000))
+    axes[0].set_xticks(np.arange(0, 300001, 30000))
     # Se usa patches y line2D para personalizar los labels.
     parche_2004 = mpatches.Patch(color='#5799c6', label='2004')
     parche_2024 = mpatches.Patch(color='orange', label='2024')
