@@ -433,28 +433,26 @@ def salario_semanal():
                             line_prom24], title='Año y Promedios')
 
     # Kernels. Filtramos años para 2004/2024 y sus respectivos ingresos para la edad.
-    ocu2004 = df.loc[(df['ESTADO'] == 1) & (
-        df['ANO4'] == 2004), 'CH06']
-    desoc2004 = df.loc[(df['ESTADO'] == 2) & (
-        df['ANO4'] == 2004), 'CH06']
-    ocu2024 = df.loc[(df['ESTADO'] == 1) & (
-        df['ANO4'] == 2024), 'CH06']
-    desoc2024 = df.loc[(df['ESTADO'] == 2) & (
-        df['ANO4'] == 2024), 'CH06']
-    sns.kdeplot(ocu2004, ax=axes[1], label='Ocupados 2004',
-                fill=True, color='red', bw_method='scott')
-    sns.kdeplot(desoc2004, ax=axes[1], label='Desocupados 2004',
-                fill=True, color='grey', bw_method='scott')
-    sns.kdeplot(ocu2024, ax=axes[1], label='Ocupados 2024',
-                fill=True, color='green', bw_method='scott', linestyle='dashed')
-    sns.kdeplot(desoc2024, ax=axes[1], label='Desocupados 2024',
-                fill=True, color='grey', bw_method='scott', linestyle='dashed')
-    axes[1].set_title('Estimación de Edad por Estado Laboral 2004/2024')
+    panel_b_data = df[(df['ESTADO'] == 1) & df['salario_semanal'].notna() & df['CH06'].notna()]
+    panel_b_data = panel_b_data[(panel_b_data['salario_semanal'] > 0) & (panel_b_data['salario_semanal'] < 300000)]
+    
+    sns.kdeplot(
+        data=panel_b_data,
+        x='CH06', 
+        y='salario_semanal',  
+        fill=True,
+        cmap='magma_r',  
+        bw_adjust=1,
+        ax=axes[1]
+    )
+    
+    axes[1].set_title('B) KDE Edad vs Salario Semanal')
     axes[1].set_xlabel('Edad')
-    axes[1].set_ylabel('Densidad estimada')
-    axes[1].legend(title='Grupo')
+    axes[1].set_ylabel('Salario Semanal (pesos)')
+    axes[1].set_ylim(0, 300000)
 
     plt.tight_layout()
+    plt.savefig('Histo_kernels salario', dpi=300)
     plt.show()
 
 
