@@ -384,19 +384,14 @@ def salario_semanal():
     print(f'El SMVM de 2024T1 es {pp} veces el SMVM de 2004T1')
 
     df = pd.read_excel('BaseLimpiaEPH.xlsx')
-    df.loc[(df['ANO4'] == 2004) & (df['P21'] > 0), 'salario_semanal'] = (
-        df.loc[(df['ANO4'] == 2004) & (df['P21'] > 0), 'P21'] * pp / 21.65) * 5
-    df.loc[(df['ANO4'] == 2024) & (df['P21'] > 0), 'salario_semanal'] = ((
-        df.loc[(df['ANO4'] == 2024) & (df['P21'] > 0), 'P21']) / 21.65) * 5
+    df.loc[(df['ANO4'] == 2004) & (df['ESTADO'] == 1) & (df['P21'] > 0), 'salario_semanal'] = ((
+        df.loc[(df['ANO4'] == 2004) & (df['ESTADO'] == 1) & (df['P21'] > 0), 'P21'] * pp) / 21.65) * 5
+    df.loc[(df['ANO4'] == 2024) & (df['ESTADO'] == 1) & (df['P21'] > 0), 'salario_semanal'] = ((
+        df.loc[(df['ANO4'] == 2024) & (df['ESTADO'] == 1) & (df['P21'] > 0), 'P21']) / 21.65) * 5
     df.to_excel('BaseLimpiaEPH.xlsx', index=False)
     print('Ajuste hecho')
-    prom_2004 = np.mean((df.loc[(df['ANO4'] == 2004) & (
-        df['salario_semanal'] != 0), 'salario_semanal']) * 4.33)
-    prom_2024 = np.mean(df.loc[(df['ANO4'] == 2024) & (df['P21'] != 0), 'P21'])
 
     # Chequeamos los promedios para verificar que las cantidades no sean absurdas tras el ajuste.
-    print(f"Promedio 2004 ajustado: {round(prom_2004, 2)}")
-    print(f"Promedio 2024: {round(prom_2024, 2)}")
 
     # Variables para el Histograma.
     sal_sem04 = df.loc[df['ANO4'] == 2004, 'salario_semanal'].dropna()
@@ -410,6 +405,8 @@ def salario_semanal():
                                     == '2004', 'salario_semanal'].mean()
     prom24 = combinado_filtrado.loc[combinado_filtrado['ANO4']
                                     == '2024', 'salario_semanal'].mean()
+    print(f"Promedio semanal 2004 ajustado: {round(prom04, 2)}")
+    print(f"Promedio semanal 2024: {round(prom24, 2)}")
 
     # Figura.
     fig, axes = plt.subplots(1, 2, figsize=(10, 6))
@@ -435,7 +432,7 @@ def salario_semanal():
     axes[0].legend(handles=[parche_2004, parche_2024, line_prom04,
                             line_prom24], title='Año y Promedios')
 
-    # Kernels. Filtramos el Estado para ocupados/desocupados, y 2004/2024.
+    # Kernels. Filtramos años para 2004/2024 y sus respectivos ingresos para la edad.
     ocu2004 = df.loc[(df['ESTADO'] == 1) & (
         df['ANO4'] == 2004), 'CH06']
     desoc2004 = df.loc[(df['ESTADO'] == 2) & (
