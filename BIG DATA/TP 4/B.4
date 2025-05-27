@@ -1,0 +1,41 @@
+    # El mejor modelo es el 5.
+
+    # Variables para el gráfico de estimado vs real
+    test_ocupados = test_combined[
+        (test_combined['ESTADO'] == 1) &
+        (test_combined[['SALARIO_SEMANAL', 'CH06', 'EDAD2',
+         'EDUC', 'PP04A', 'PP03D']].notnull().all(axis=1))
+    ].copy()
+    test_ocupados['mujer'] = (test_ocupados['CH04'] == 2).astype(int)
+
+    # Sacamos el percentil 99, ya que los casos mas extremos no nos suman al análisis visual.
+    umbral = test_ocupados['SALARIO_SEMANAL'].quantile(0.99)
+    df_filtrado = test_ocupados[test_ocupados['SALARIO_SEMANAL'] <= umbral].copy(
+    )
+
+    vars = modelos[mejor_modelo]
+    x = df_filtrado[vars]
+    y_real = df_filtrado['SALARIO_SEMANAL']
+    edad = df_filtrado['CH06']
+    model5 = LinearRegression().fit(x, y_real)
+    y_pred = model5.predict(x)
+
+    # DF de predicción.
+    df_pred = pd.DataFrame({'edad': edad, 'pred': y_pred})
+
+    # Promedio de predicción para la línea del gráfico
+    df_prom = df_pred.groupby('edad', as_index=False)['pred'].mean()
+
+    # Gráfico
+    plt.figure(figsize=(8, 6))
+    plt.scatter(edad, y_real,
+                alpha=0.3, color='grey', label='Datos reales')
+    plt.plot(df_prom['edad'], df_prom['pred'],
+             color='blue', linewidth=2, label='Predicción media por edad')
+    plt.xlabel('Edad')
+    plt.xticks(np.arange(10, 91, 5))
+    plt.ylabel('Salario semanal')
+    plt.title('Tendencia según edad')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
