@@ -1,48 +1,42 @@
-def crossvalidation():
-    df_2024 = pd.read_excel('respondieron.xlsx')
+    # Cross-validation.
 
-    test_ocupados = df_2024[
-        (df_2024['ESTADO'] == 1) &
-        (df_2024[['SALARIO_SEMANAL', 'CH06', 'EDAD2',
+    test_ocupados = test_combined[
+        (test_combined['ESTADO'] == 1) &
+        (test_combined[['SALARIO_SEMANAL', 'CH06', 'EDAD2',
          'EDUC', 'PP04A', 'PP03D']].notnull().all(axis=1))
     ].copy()
     test_ocupados['mujer'] = (test_ocupados['CH04'] == 2).astype(int)
 
-    # Modelos
     modelos = {
         'Modelo 1': ['CH06'],
         'Modelo 2': ['CH06', 'EDAD2'],
         'Modelo 3': ['CH06', 'EDAD2', 'EDUC'],
         'Modelo 4': ['CH06', 'EDAD2', 'EDUC', 'mujer'],
-        'Modelo 5': ['CH06', 'EDAD2', 'EDUC', 'mujer', 'PP04A', 'PP03D']}
+        'Modelo 5': ['CH06', 'EDAD2', 'EDUC', 'mujer', 'PP04A', 'PP03D']
+    }
+    resultados = {'MSE': {}, 'RMSE': {}, 'MAE': {}}
+    for modelo, vars_indep in modelos.items():
 
-    for nombre, vars_indep in modelos.items():
-        print(f"\n--- {nombre} ---")
+        x = test_ocupados[vars_indep]
         y = test_ocupados['SALARIO_SEMANAL']
-        X = test_ocupados[vars_indep]
 
-        x_train, x_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.3, random_state=110)
-
-        # Regresión lineal
         lreg = LinearRegression()
-        # Estimación del modelo con base de entrenamiento
-        lreg.fit(x_train, y_train)
-        print("Coeficiente:", lreg.coef_)  # pendiente
+        lreg.fit(x, y)
 
-        # Predicción de 'y' con base de testeo (y sombrerito)
-        y_pred_lreg_train = lreg.predict(x_train)
-        y_pred_lreg = lreg.predict(x_test)
+        y_pred = lreg.predict(x)
 
-        # Evaluación del modelo
-        print("R2 afuera de la muestra:", round(
-            r2_score(y_test, y_pred_lreg), 2))
-        print("R2 adentro de la muestra:", round(r2_score(
-            y_train, y_pred_lreg_train), 2))
-        ecm_lreg = mean_squared_error(y_test, y_pred_lreg)
-        ecm_lreg_train = mean_squared_error(y_train, y_pred_lreg_train)
-        print('Error cuadrático medio (test):', round(ecm_lreg, 2))
-        print('Error cuadrático medio (train):', round(ecm_lreg_train, 2))
+        mse = mean_squared_error(y, y_pred)
+        rmse = np.sqrt(mse)
+        mae = mean_absolute_error(y, y_pred)
 
+        resultados['MSE'][modelo] = round(mse, 2)
+        resultados['RMSE'][modelo] = round(rmse, 2)
+        resultados['MAE'][modelo] = round(mae, 2)
 
-crossvalidation()
+    tabla_resultados = pd.DataFrame(resultados)
+    # Transponer para tener métricas como filas
+    tabla_resultados = tabla_resultados.T
+
+    # Mostrar tabla
+    print("\nTabla de resultados (métricas por fila):")
+    print(tabla_resultados)
