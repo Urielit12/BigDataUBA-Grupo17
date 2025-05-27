@@ -7,13 +7,13 @@ variables = ['constante', 'CH06', 'EDAD2', 'EDUC', 'P21', 'SALARIO_SEMANAL', 'HO
 # Función para train y test por año
 def evaluar_modelos_por_año(df_train, df_test, año, variables):
     # Filtrar datos por año
-    train_anio = df_train[df_train['ANO4'] == año].copy()
-    test_anio = df_test[df_test['ANO4'] == año].copy()
+    train_año = df_train[df_train['ANO4'] == año].copy()
+    test_año = df_test[df_test['ANO4'] == año].copy()
 
-    X_train = train_anio[variables].copy()
-    y_train = train_anio['target']
-    X_test = test_anio[variables].copy()
-    y_test = test_anio['target']
+    X_train = train_año[variables].copy()
+    y_train = train_año['target']
+    X_test = test_año[variables].copy()
+    y_test = test_año['target']
 
     for col in X_train.columns:
         if X_train[col].isnull().any():
