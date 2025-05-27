@@ -1,0 +1,168 @@
+# Cargar los conjuntos de entrenamiento y prueba
+train_combined = pd.read_excel('train_combinado.xlsx')
+test_combined = pd.read_excel('test_combinado.xlsx')
+
+variables = ['constante', 'CH06', 'EDAD2', 'EDUC', 'P21', 'SALARIO_SEMANAL', 'HORASTRAB', 'CH04', 'PP04A', 'PP03D']
+
+# Función para evaluar modelos por año y base
+def evaluar_modelos_por_base(df_train, df_test, año, variables, base_name, dropna=False):
+    # Filtrar datos por año
+    train_anio = df_train[df_train['ANO4'] == año].copy()
+    test_anio = df_test[df_test['ANO4'] == año].copy()
+
+    if train_anio.empty or test_anio.empty:
+        print(f"No hay datos disponibles para el año {año} ({base_name})")
+        return None
+
+    X_train = train_anio[variables].copy()
+    y_train = train_anio['target'].copy()
+    X_test = test_anio[variables].copy()
+    y_test = test_anio['target'].copy()
+
+    if dropna:
+        # Base "limpia": eliminar filas con NaN en variables
+        original_train_size = len(X_train)
+        original_test_size = len(X_test)
+        X_train = X_train.dropna()
+        y_train = y_train[X_train.index]
+        X_test = X_test.dropna()
+        y_test = y_test[X_test.index]
+        print(f"\nBase limpia ({año}):")
+        print(f"Filas eliminadas en X_train: {original_train_size - len(X_train)} ({100 * (original_train_size - len(X_train)) / original_train_size:.2f}%)")
+        print(f"Filas eliminadas en X_test: {original_test_size - len(X_test)} ({100 * (original_test_size - len(X_test)) / original_test_size:.2f}%)")
+    else:
+        # Base "sin limpiar": rellenar NaN con 0
+        print(f"\nValores faltantes en X_train antes de imputar ({año}, {base_name}):\n", X_train.isnull().sum())
+        print(f"Valores faltantes en X_test antes de imputar ({año}, {base_name}):\n", X_test.isnull().sum())
+        for col in X_train.columns:
+            if X_train[col].isnull().any() or X_test[col].isnull().any():
+                nan_train_count = X_train[col].isnull().sum()
+                nan_test_count = X_test[col].isnull().sum()
+                X_train.loc[:, col] = X_train[col].fillna(0)
+                X_test.loc[:, col] = X_test[col].fillna(0)
+                print(f"Imputado {col} con 0 para el año {año} ({base_name}) ({nan_train_count} NaN en X_train, {nan_test_count} NaN en X_test)")
+
+    # Verificar que no queden valores faltantes
+    if X_train.isnull().any().any() or X_test.isnull().any().any():
+        print(f"Advertencia: Todavía hay valores NaN en X_train o X_test para el año {año} ({base_name})")
+        print("Valores faltantes en X_train después de imputar:\n", X_train.isnull().sum())
+        print("Valores faltantes en X_test después de imputar:\n", X_test.isnull().sum())
+        return None
+
+    if len(X_train) == 0 or len(X_test) == 0:
+        print(f"No hay datos suficientes después de dropna para el año {año} ({base_name})")
+        return None
+
+    # Verificar distribución de clases
+    class_counts = y_train.value_counts()
+    print(f"Distribución de clases en y_train ({año}, {base_name}):")
+    print(class_counts)
+    if len(class_counts) < 2:
+        print(f"Error: y_train contiene solo una clase ({class_counts.index[0]}) para el año {año} ({base_name}). No se puede entrenar el modelo.")
+        return None
+
+    # Estandarizar variables (excluyendo 'constante')
+    scaler = StandardScaler()
+    vars_to_scale = [col for col in variables if col != 'constante']
+    X_train_scaled = X_train.copy()
+    X_test_scaled = X_test.copy()
+    X_train_scaled[vars_to_scale] = scaler.fit_transform(X_train[vars_to_scale])
+    X_test_scaled[vars_to_scale] = scaler.transform(X_test[vars_to_scale])
+
+    # Inicializar modelos
+    logit = LogisticRegression(max_iter=1000, random_state=444)
+    knn = KNeighborsClassifier(n_neighbors=5)
+
+    # Entrenar modelos
+    try:
+        logit.fit(X_train_scaled, y_train)
+        knn.fit(X_train_scaled, y_train)
+    except ValueError as e:
+        print(f"Error al entrenar modelos para el año {año} ({base_name}): {e}")
+        return None
+
+    # Predicciones con umbral ajustado para regresión logística
+    y_prob_logit = logit.predict_proba(X_test_scaled)[:, 1]
+    threshold = 0.2  # Umbral más bajo para capturar más desocupados
+    y_pred_logit = (y_prob_logit >= threshold).astype(int)
+    y_pred_knn = knn.predict(X_test_scaled)
+
+    # Matriz de confusión
+    cm_logit = confusion_matrix(y_test, y_pred_logit)
+    cm_knn = confusion_matrix(y_test, y_pred_knn)
+
+    # Curva ROC y AUC
+    fpr_logit, tpr_logit, _ = roc_curve(y_test, y_prob_logit)
+    auc_logit = auc(fpr_logit, tpr_logit)
+    fpr_knn, tpr_knn, _ = roc_curve(y_test, knn.predict_proba(X_test_scaled)[:, 1])
+    auc_knn = auc(fpr_knn, tpr_knn)
+
+    # Precisión
+    acc_logit = accuracy_score(y_test, y_pred_logit)
+    acc_knn = accuracy_score(y_test, y_pred_knn)
+
+    # Graficar curva ROC
+    print(f"Generando curva ROC para el año {año} ({base_name})")
+    plt.figure(figsize=(8, 6))
+    plt.plot(fpr_logit, tpr_logit, label=f'Logit (AUC = {auc_logit:.2f})')
+    plt.plot(fpr_knn, tpr_knn, label=f'KNN (AUC = {auc_knn:.2f})')
+    plt.plot([0, 1], [0, 1], 'k--')
+    plt.xlabel('Tasa de Falsos Positivos (FPR)')
+    plt.ylabel('Tasa de Verdaderos Positivos (TPR)')
+    plt.title(f'Curva ROC - Año {año} ({base_name})')
+    plt.legend(loc='lower right')
+    plt.grid(True)
+    
+    # Guardar y mostrar el gráfico
+    output_file = f'roc_curve_{año}_{base_name}.png'
+    plt.savefig(output_file)
+    print(f"Gráfico guardado como {output_file} en {os.getcwd()}")
+    plt.show()
+    plt.close()
+
+    # Guardar resultados
+    resultados = {
+        'Matriz de Confusión Logit': cm_logit,
+        'Matriz de Confusión KNN': cm_knn,
+        'AUC Logit': auc_logit,
+        'AUC KNN': auc_knn,
+        'Accuracy Logit': acc_logit,
+        'Accuracy KNN': acc_knn
+    }
+
+    return resultados
+
+# Evaluar para cada año y base
+resultados = {}
+for año in [2024, 2004]:
+    resultados[f'{año}_limpia'] = evaluar_modelos_por_base(train_combined, test_combined, año, variables, base_name='limpia', dropna=True)
+    resultados[f'{año}_sin_limpiar'] = evaluar_modelos_por_base(train_combined, test_combined, año, variables, base_name='sin_limpiar', dropna=False)
+
+# Imprimir resultados y comparar modelos
+for key, resultado in resultados.items():
+    año, base_name = key.split('_', 1)
+    if resultado is None:
+        print(f"No hay resultados para el año {año} ({base_name})")
+        continue
+    print(f"\nResultados para el año {año} ({base_name}):")
+    print("\nMatriz de Confusión - Logit:")
+    print(resultado['Matriz de Confusión Logit'])
+    print("\nMatriz de Confusión - KNN:")
+    print(resultado['Matriz de Confusión KNN'])
+    print(f"\nAUC - Logit: {resultado['AUC Logit']:.2f}")
+    print(f"AUC - KNN: {resultado['AUC KNN']:.2f}")
+    print(f"Accuracy - Logit: {resultado['Accuracy Logit']:.2f}")
+    print(f"Accuracy - KNN: {resultado['Accuracy KNN']:.2f}")
+
+    # Comparar modelos
+    print(f"\nComparación de modelos para {año} ({base_name}):")
+    if resultado['AUC Logit'] > resultado['AUC KNN']:
+        print(f"La regresión logística tiene mejor desempeño (AUC: {resultado['AUC Logit']:.2f} vs. {resultado['AUC KNN']:.2f}).")
+        print(f"Justificación: Un AUC más alto indica mejor capacidad de discriminación. "
+              f"Precisión (Logit: {resultado['Accuracy Logit']:.2f}, KNN: {resultado['Accuracy KNN']:.2f}) "
+              f"y la matriz de confusión apoyan esta elección.")
+    else:
+        print(f"KNN tiene mejor desempeño (AUC: {resultado['AUC KNN']:.2f} vs. {resultado['AUC Logit']:.2f}).")
+        print(f"Justificación: Un AUC más alto indica mejor capacidad de discriminación. "
+              f"Precisión (Logit: {resultado['Accuracy Logit']:.2f}, KNN: {resultado['Accuracy KNN']:.2f}) "
+              f"y la matriz de confusión apoyan esta elección.")
