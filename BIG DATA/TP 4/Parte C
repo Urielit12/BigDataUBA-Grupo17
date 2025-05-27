@@ -1,0 +1,125 @@
+# Cargar los conjuntos de train y test
+train_combined = pd.read_excel('train_combinado.xlsx')
+test_combined = pd.read_excel('test_combinado.xlsx')
+
+variables = ['constante', 'CH06', 'EDAD2', 'EDUC', 'P21', 'SALARIO_SEMANAL', 'HORASTRAB', 'CH04', 'PP04A', 'PP03D']
+
+# Función para evaluar modelos por año
+def evaluar_modelos_por_año(df_train, df_test, año, variables):
+    train_anio = df_train[df_train['ANO4'] == año].copy()
+    test_anio = df_test[df_test['ANO4'] == año].copy()
+
+    if train_anio.empty or test_anio.empty:
+        print(f"No hay datos disponibles para el año {año}")
+        return None
+
+    X_train = train_anio[variables].copy()
+    y_train = train_anio['target']
+    X_test = test_anio[variables].copy()
+    y_test = test_anio['target']
+
+    # Manejo valores faltantes 
+    for col in X_train.columns:
+        if X_train[col].isnull().any():
+            median_value = X_train[col].median()
+            if np.isnan(median_value): 
+                median_value = 0
+            X_train[col] = X_train[col].fillna(median_value)
+            X_test[col] = X_test[col].fillna(median_value)
+
+    # Verificar que no queden valores NaN
+    if X_train.isnull().any().any() or X_test.isnull().any().any():
+        print(f"Advertencia: Todavía hay valores NaN en X_train o X_test para el año {año}")
+        print("Valores faltantes en X_train:\n", X_train.isnull().sum())
+        print("Valores faltantes en X_test:\n", X_test.isnull().sum())
+        return None
+
+    # Estandarizo variables 
+    scaler = StandardScaler()
+    vars_to_scale = [col for col in variables if col != 'constante']
+    X_train_scaled = X_train.copy()
+    X_test_scaled = X_test.copy()
+    X_train_scaled[vars_to_scale] = scaler.fit_transform(X_train[vars_to_scale])
+    X_test_scaled[vars_to_scale] = scaler.transform(X_test[vars_to_scale])
+
+    # Modelos logit y KNN
+    logit = LogisticRegression(max_iter=1000, random_state=444)
+    knn = KNeighborsClassifier(n_neighbors=5)
+
+    # Entrenar modelos
+    logit.fit(X_train_scaled, y_train)
+    knn.fit(X_train_scaled, y_train)
+
+    # Predicciones
+    y_pred_logit = logit.predict(X_test_scaled)
+    y_pred_knn = knn.predict(X_test_scaled)
+
+    # Probabilidades para ROC
+    y_prob_logit = logit.predict_proba(X_test_scaled)[:, 1]
+    y_prob_knn = knn.predict_proba(X_test_scaled)[:, 1]
+
+    # Matriz de confusión
+    cm_logit = confusion_matrix(y_test, y_pred_logit)
+    cm_knn = confusion_matrix(y_test, y_pred_knn)
+
+    # Curva ROC y AUC
+    fpr_logit, tpr_logit, _ = roc_curve(y_test, y_prob_logit)
+    auc_logit = auc(fpr_logit, tpr_logit)
+    fpr_knn, tpr_knn, _ = roc_curve(y_test, y_prob_knn)
+    auc_knn = auc(fpr_knn, tpr_knn)
+
+    # Precisión
+    acc_logit = accuracy_score(y_test, y_pred_logit)
+    acc_knn = accuracy_score(y_test, y_pred_knn)
+
+    # Grafico ROC 
+    plt.figure(figsize=(8, 6))
+    plt.plot(fpr_logit, tpr_logit, label=f'Logit (AUC = {auc_logit:.2f})')
+    plt.plot(fpr_knn, tpr_knn, label=f'KNN (AUC = {auc_knn:.2f})')
+    plt.plot([0, 1], [0, 1], 'k--')
+    plt.xlabel('Tasa de Falsos Positivos (FPR)')
+    plt.ylabel('Tasa de Verdaderos Positivos (TPR)')
+    plt.title(f'Curva ROC - Año {año}')
+    plt.legend(loc='lower right')
+    plt.grid(True)
+    plt.savefig(f'roc_curve_{año}.png')
+    plt.close()
+
+    # Resultados de los modelos
+    resultados = {
+        'Matriz de Confusión Logit': cm_logit,
+        'Matriz de Confusión KNN': cm_knn,
+        'AUC Logit': auc_logit,
+        'AUC KNN': auc_knn,
+        'Accuracy Logit': acc_logit,
+        'Accuracy KNN': acc_knn
+    }
+
+    return resultados
+
+# Evaluo para cada año
+resultados_2004 = evaluar_modelos_por_año(train_combined, test_combined, 2004, variables)
+resultados_2024 = evaluar_modelos_por_año(train_combined, test_combined, 2024, variables)
+
+# Comparación de Modelos
+for año, resultados in [(2004, resultados_2004), (2024, resultados_2024)]:
+    if resultados is None:
+        print(f"No hay resultados para el año {año}")
+        continue
+    print(f"\nResultados para el año {año}:")
+    print("\nMatriz de Confusión - Logit:")
+    print(resultados['Matriz de Confusión Logit'])
+    print("\nMatriz de Confusión - KNN:")
+    print(resultados['Matriz de Confusión KNN'])
+    print(f"\nAUC - Logit: {resultados['AUC Logit']:.2f}")
+    print(f"AUC - KNN: {resultados['AUC KNN']:.2f}")
+    print(f"Accuracy - Logit: {resultados['Accuracy Logit']:.2f}")
+    print(f"Accuracy - KNN: {resultados['Accuracy KNN']:.2f}")
+
+    # Comparar modelos
+    print(f"\nComparación de modelos para el año {año}:")
+    if resultados['AUC Logit'] > resultados['AUC KNN']:
+        print(f"La regresión logística tiene mejor desempeño (AUC: {resultados['AUC Logit']:.2f} vs. {resultados['AUC KNN']:.2f}).")
+        
+    else:
+        print(f"KNN tiene mejor desempeño (AUC: {resultados['AUC KNN']:.2f} vs. {resultados['AUC Logit']:.2f}).")
