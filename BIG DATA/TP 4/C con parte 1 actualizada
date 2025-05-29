@@ -400,7 +400,7 @@ def c():
     test = pd.read_excel("test_combinado.xlsx").fillna(0)
 
     variables = (
-        ['CH06', 'EDUC', 'SALARIO_SEMANAL', 'CH08', 'CAT_OCUP', 'PP10D'])
+        ['CH06', 'CH08', 'CAT_OCUP', 'PP10D', 'NIVEL_ED'])
     X_train = train[variables]
     y_train = train['target']
     X_test = test[variables]
@@ -430,6 +430,14 @@ def c():
         print(classification_report(y_test, y_pred_logit))
         print("Accuracy:", accuracy_score(y_test, y_pred_logit))
 
+        fpr, tpr, _ = roc_curve(y_test, y_proba_logit)
+        auc_logit = roc_auc_score(y_test, y_proba_logit)
+        display = RocCurveDisplay(
+            fpr=fpr, tpr=tpr, roc_auc=auc_logit, estimator_name='Logit')
+        display.plot()
+        plt.plot([0, 1], [0, 1], color='red', linestyle='--')
+        plt.show()
+
         # Matriz de confusión
         cm = confusion_matrix(y_test, y_pred_logit)
         ConfusionMatrixDisplay(cm).plot()
@@ -454,3 +462,4 @@ def c():
 
 
 c()
+
