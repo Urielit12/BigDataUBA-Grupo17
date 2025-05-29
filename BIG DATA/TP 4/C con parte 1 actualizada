@@ -1,0 +1,456 @@
+import statsmodels.api as sm
+import pandas as pd
+import numpy as np
+from scipy import stats
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import (
+    classification_report,
+    accuracy_score,
+    confusion_matrix,
+    ConfusionMatrixDisplay,
+    roc_curve,
+    roc_auc_score
+)
+
+
+def limpieza():
+    df_2004 = pd.read_stata('individual.dta', convert_categoricals=False)
+    df_2024 = pd.read_excel('usu_individual_T124.xlsx')
+
+    df_2004.columns = df_2004.columns.str.upper()
+    df_2024.columns = df_2024.columns.str.upper()
+    columnas_comunes = df_2004.columns.intersection(df_2024.columns)
+
+    df_2004_filtrado = df_2004[columnas_comunes]
+    df_2024_filtrado = df_2024[columnas_comunes]
+    df_combinado = pd.concat(
+        [df_2004_filtrado, df_2024_filtrado], ignore_index=True)
+
+    df_eph_nea = df_combinado[df_combinado['REGION'] == 41].copy()
+
+    # Variable EDAD2
+    if 'CH06' in df_eph_nea.columns:
+        df_eph_nea['EDAD2'] = np.square(df_eph_nea['CH06'])
+        print("Variable 'edad2' añadida exitosamente.")
+    else:
+        print("No se encontró la columna 'CH06'.")
+
+    # Variable EDUC
+
+    def calcular_educ(row):
+        if row['CH10'] == 1:
+            if row['CH14'] in [98, 99]:
+                return 6
+            if row['CH12'] == 1:
+                return 0
+            elif row['CH12'] == 2:
+                return row['CH14']
+            elif row['CH12'] == 3:
+                return row['CH14']
+            elif row['CH12'] == 4:
+                return 6 + row['CH14']
+            elif row['CH12'] == 5:
+                return 9 + row['CH14']
+            elif row['CH12'] == 6:
+                return 12 + row['CH14']
+            elif row['CH12'] == 7:
+                return 12 + row['CH14']
+            elif row['CH12'] == 8:
+                return 17 + row['CH14']
+            elif row['CH12'] == 9:
+                return row['CH14']
+            else:
+                return 0
+        elif row['CH10'] == 2:
+            if row['CH13'] == 1:
+                if row['CH14'] in [98, 99]:
+                    return 6
+                elif row['CH12'] == 1:
+                    return 0
+                elif row['CH12'] == 2:
+                    return 6
+                elif row['CH12'] == 3:
+                    return 9
+                elif row['CH12'] == 4:
+                    return 12
+                elif row['CH12'] == 5:
+                    return 12
+                elif row['CH12'] == 6:
+                    return 15
+                elif row['CH12'] == 7:
+                    return 17
+                elif row['CH12'] == 8:
+                    return 18
+                elif row['CH12'] == 9:
+                    return 6
+                else:
+                    return 0
+            elif row['CH13'] == 2:
+                if row['CH14'] in [98, 99]:
+                    return 6
+                elif row['CH12'] == 1:
+                    return 0
+                elif row['CH12'] == 2:
+                    return row['CH14']
+                elif row['CH12'] == 3:
+                    return row['CH14']
+                elif row['CH12'] == 4:
+                    return 6 + row['CH14']
+                elif row['CH12'] == 5:
+                    return 9 + row['CH14']
+                elif row['CH12'] == 6:
+                    return 12 + row['CH14']
+                elif row['CH12'] == 7:
+                    return 12 + row['CH14']
+                elif row['CH12'] == 8:
+                    return 17 + row['CH14']
+                elif row['CH12'] == 9:
+                    return row['CH14']
+                else:
+                    return 0
+        elif row['CH10'] == 3:
+            return 0
+        else:
+            return 0
+
+    for col in ['CH10', 'CH12', 'CH13', 'CH14']:
+        if col in df_eph_nea.columns:
+            df_eph_nea[col] = pd.to_numeric(df_eph_nea[col], errors='coerce')
+
+    df_eph_nea['EDUC'] = df_eph_nea.apply(calcular_educ, axis=1)
+    print("Variable 'educ' añadida exitosamente.")
+
+    # Variable SALARIO_SEMANAL
+    SMVM2004 = 350
+    SMVM2024 = 202800
+    pp = round(SMVM2024 / SMVM2004, 2)
+
+    if 'ANO4' in df_eph_nea.columns and 'ESTADO' in df_eph_nea.columns and 'P21' in df_eph_nea.columns:
+        condiciones_2004 = (df_eph_nea['ANO4'] == 2004) & (
+            df_eph_nea['ESTADO'] == 1) & (df_eph_nea['P21'] > 0)
+        condiciones_2024 = (df_eph_nea['ANO4'] == 2024) & (
+            df_eph_nea['ESTADO'] == 1) & (df_eph_nea['P21'] > 0)
+
+        df_eph_nea.loc[condiciones_2004, 'SALARIO_SEMANAL'] = (
+            (df_eph_nea.loc[condiciones_2004, 'P21'] * pp) / 21.65) * 5
+        df_eph_nea.loc[condiciones_2024, 'SALARIO_SEMANAL'] = (
+            df_eph_nea.loc[condiciones_2024, 'P21'] / 21.65) * 5
+        print("Variable 'salario_semanal' añadida exitosamente.")
+    else:
+        print("Faltan columnas necesarias para calcular 'salario_semanal'.")
+
+    # Variable HORASTRAB
+    variables_a_limpiar = ['PP3E_TOT', 'PP3F_TOT']
+    for var in variables_a_limpiar:
+        if var in df_eph_nea.columns:
+            df_eph_nea[var] = df_eph_nea[var].replace([99, 999, 9999], np.nan)
+
+    if all(col in df_eph_nea.columns for col in variables_a_limpiar):
+        df_eph_nea['HORASTRAB'] = df_eph_nea['PP3E_TOT'] + \
+            df_eph_nea['PP3F_TOT']
+        print("Variable 'horastrab' añadida exitosamente.")
+    else:
+        print("Faltan columnas necesarias para calcular 'horastrab'.")
+
+    df_eph_nea.to_excel('EPH_NEA_2004_2024.xlsx', index=False)
+    print("Archivo final guardado con todas las variables añadidas.")
+
+    respondieron = df_eph_nea[df_eph_nea['ESTADO'].notna() & (
+        df_eph_nea['ESTADO'] != 0)]
+    norespondieron = df_eph_nea[(df_eph_nea['ESTADO'].isna())
+                                | (df_eph_nea['ESTADO'] == 0)]
+
+    respondieron.to_excel('respondieron.xlsx', index=False)
+    norespondieron.to_excel('norespondieron.xlsx', index=False)
+
+    # Dimensión de la base
+    print("Dimensión del dataframe:", respondieron.shape)
+
+    # Variables e información
+    print(respondieron.info())
+
+    respondieron.head()
+    respondieron.tail()
+
+    # Hay duplicados?
+    print("Duplicados:", respondieron.duplicated().sum())
+
+    # Hay valores faltantes?
+    print("\n Missings:\n", respondieron.isnull().sum())  # conteo
+
+    respondieron['P21'] = pd.to_numeric(respondieron['P21'], errors='coerce')
+    respondieron = respondieron[respondieron['P21'] >= 0]
+
+    # Variables relevantes
+    variables = ['CH06', 'EDAD2', 'EDUC', 'P21', 'SALARIO_SEMANAL',
+                 'HORASTRAB', 'ESTADO', 'CH04', 'PP04A', 'PP03D', 'ANO4', 'CH08', 'CH07', 'CH09', 'CAT_OCUP', 'PP10D']
+    columnas = ['constante'] + variables
+
+    # Listas para conjuntos combinados
+    train_list = []
+    test_list = []
+
+    for anio in [2004, 2024]:
+        df_anio = respondieron[respondieron['ANO4'] == anio]
+        y = (df_anio['ESTADO'] == 2).astype(int)  # Variable target
+
+        X_df = df_anio[variables].copy()
+        X_df.insert(0, 'constante', 1)
+
+        data = pd.concat([X_df, y.rename('target')],
+                         axis=1).dropna(subset=['target'])
+
+        train, test = train_test_split(data, test_size=0.3, random_state=444)
+
+        # Guardar para conjuntos combinados
+        train_list.append(train)
+        test_list.append(test)
+
+        # Análisis de diferencia de medias
+        tabla_dif = pd.DataFrame(index=columnas)
+
+        for var in columnas:
+            train_valid = train[[var]].dropna()
+            test_valid = test[[var]].dropna()
+
+            tabla_dif.loc[var, 'N train'] = train_valid.shape[0]
+            tabla_dif.loc[var, 'Mean train'] = train_valid[var].mean()
+            tabla_dif.loc[var, 'sd train'] = train_valid[var].std()
+
+            tabla_dif.loc[var, 'N test'] = test_valid.shape[0]
+            tabla_dif.loc[var, 'Mean test'] = test_valid[var].mean()
+            tabla_dif.loc[var, 'sd test'] = test_valid[var].std()
+
+            if len(train_valid[var]) > 1 and len(test_valid[var]) > 1:
+                t_test = stats.ttest_ind(
+                    train_valid[var], test_valid[var], equal_var=False, nan_policy='omit')
+                tabla_dif.loc[var, 't-test'] = t_test.statistic
+                tabla_dif.loc[var, 'p-value'] = t_test.pvalue
+            else:
+                tabla_dif.loc[var, 't-test'] = None
+                tabla_dif.loc[var, 'p-value'] = None
+
+        columnas_a_redondear = ['Mean train', 'Mean test',
+                                'sd train', 'sd test', 't-test', 'p-value']
+        tabla_dif[columnas_a_redondear] = tabla_dif[columnas_a_redondear].round(
+            2)
+
+        tabla_dif.to_excel(f'Tabla2_diferencia_de_medias_{anio}.xlsx')
+        print(f"Exportado tabla de diferencia de medias para el año {anio}")
+
+    # Guardar conjuntos combinados
+    train_combined = pd.concat(train_list).reset_index(drop=True)
+    test_combined = pd.concat(test_list).reset_index(drop=True)
+
+    train_combined.to_excel("train_combinado.xlsx", index=False)
+    test_combined.to_excel("test_combinado.xlsx", index=False)
+    print("Conjuntos combinados guardados exitosamente.")
+
+    ocupados = train_combined[
+        (train_combined['ESTADO'] == 1) &
+        (train_combined['SALARIO_SEMANAL'].notnull()) &
+        (train_combined['CH04'].notnull()) &
+        (train_combined['CH06'].notnull()) &
+        (train_combined['EDAD2'].notnull()) &
+        (train_combined['EDUC'].notnull()) &
+        (train_combined['PP04A'].notnull()) &
+        (train_combined['PP03D'].notnull())
+    ].copy()
+
+    ocupados['mujer'] = (ocupados['CH04'] == 2).astype(int)
+
+    modelos = {
+        'Modelo 1': ['CH06'],
+        'Modelo 2': ['CH06', 'EDAD2'],
+        'Modelo 3': ['CH06', 'EDAD2', 'EDUC'],
+        'Modelo 4': ['CH06', 'EDAD2', 'EDUC', 'mujer'],
+        'Modelo 5': ['CH06', 'EDAD2', 'EDUC', 'mujer', 'PP04A', 'PP03D']
+    }
+
+    resultados = {}
+
+    for nombre, vars_indep in modelos.items():
+        X = ocupados[vars_indep]
+        X = sm.add_constant(X)
+        y = ocupados['SALARIO_SEMANAL']
+
+        modelo = sm.OLS(y, X).fit()
+        resultados[nombre] = modelo
+
+    tabla_resultados = pd.DataFrame()
+
+    for nombre, modelo in resultados.items():
+        resumen = pd.DataFrame({
+            nombre: [
+                f"{coef:.3f}" + (
+                    "***" if pval < 0.001 else "**" if pval < 0.05 else "*" if pval < 0.1 else ""
+                ) + f"\n({se:.2f})"
+                for coef, se, pval in zip(modelo.params, modelo.bse, modelo.pvalues)
+            ]
+        }, index=modelo.params.index)
+
+        resumen.loc['R2'] = f"{modelo.rsquared:.3f}"
+        resumen.loc['N (obs)'] = int(modelo.nobs)
+        tabla_resultados = pd.concat([tabla_resultados, resumen], axis=1)
+
+    print("Tabla 2\n")
+    print(tabla_resultados)
+
+    # Cross-validation.
+
+    test_ocupados = test_combined[
+        (test_combined['ESTADO'] == 1) &
+        (test_combined[['SALARIO_SEMANAL', 'CH06', 'EDAD2',
+         'EDUC', 'PP04A', 'PP03D']].notnull().all(axis=1))
+    ].copy()
+    test_ocupados['mujer'] = (test_ocupados['CH04'] == 2).astype(int)
+
+    modelos = {
+        'Modelo 1': ['CH06'],
+        'Modelo 2': ['CH06', 'EDAD2'],
+        'Modelo 3': ['CH06', 'EDAD2', 'EDUC'],
+        'Modelo 4': ['CH06', 'EDAD2', 'EDUC', 'mujer'],
+        'Modelo 5': ['CH06', 'EDAD2', 'EDUC', 'mujer', 'PP04A', 'PP03D']
+    }
+    resultados = {'MSE': {}, 'RMSE': {}, 'MAE': {}}
+    for modelo, vars_indep in modelos.items():
+
+        x = test_ocupados[vars_indep]
+        y = test_ocupados['SALARIO_SEMANAL']
+
+        lreg = LinearRegression()
+        lreg.fit(x, y)
+
+        y_pred = lreg.predict(x)
+
+        mse = mean_squared_error(y, y_pred)
+        rmse = np.sqrt(mse)
+        mae = mean_absolute_error(y, y_pred)
+
+        resultados['MSE'][modelo] = round(mse, 2)
+        resultados['RMSE'][modelo] = round(rmse, 2)
+        resultados['MAE'][modelo] = round(mae, 2)
+
+    tabla_resultados = pd.DataFrame(resultados)
+    tabla_resultados = tabla_resultados.T
+
+    print("\nTabla de resultados (métricas por fila):")
+    print(tabla_resultados)
+
+    # Cual es el mejor modelo?
+
+    mejor_modelo = tabla_resultados.loc['RMSE'].idxmin()
+    print(f"\nEl modelo con mejor performance es: {mejor_modelo}")
+
+    # El mejor modelo es el 5.
+
+    # Variables para el gráfico de estimado vs real
+    test_ocupados = test_combined[
+        (test_combined['ESTADO'] == 1) &
+        (test_combined[['SALARIO_SEMANAL', 'CH06', 'EDAD2',
+         'EDUC', 'PP04A', 'PP03D']].notnull().all(axis=1))
+    ].copy()
+    test_ocupados['mujer'] = (test_ocupados['CH04'] == 2).astype(int)
+
+    # Sacamos el percentil 99, ya que los casos mas extremos no nos suman al análisis visual.
+    umbral = test_ocupados['SALARIO_SEMANAL'].quantile(0.99)
+    df_filtrado = test_ocupados[test_ocupados['SALARIO_SEMANAL'] <= umbral].copy(
+    )
+
+    vars = modelos[mejor_modelo]
+    x = df_filtrado[vars]
+    y_real = df_filtrado['SALARIO_SEMANAL']
+    edad = df_filtrado['CH06']
+    model5 = LinearRegression().fit(x, y_real)
+    y_pred = model5.predict(x)
+
+    # DF de predicción.
+    df_pred = pd.DataFrame({'edad': edad, 'pred': y_pred})
+
+    # Promedio de predicción para la línea del gráfico
+    df_prom = df_pred.groupby('edad', as_index=False)['pred'].mean()
+
+    # Gráfico
+    plt.figure(figsize=(8, 6))
+    plt.scatter(edad, y_real,
+                alpha=0.3, color='grey', label='Datos reales')
+    plt.plot(df_prom['edad'], df_prom['pred'],
+             color='blue', linewidth=2, label='Predicción media por edad')
+    plt.xlabel('Edad')
+    plt.xticks(np.arange(10, 91, 5))
+    plt.ylabel('Salario semanal')
+    plt.title('Tendencia según edad')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+limpieza()
+
+
+def c():
+    train = pd.read_excel("train_combinado.xlsx").fillna(0)
+    test = pd.read_excel("test_combinado.xlsx").fillna(0)
+
+    variables = (
+        ['CH06', 'EDUC', 'SALARIO_SEMANAL', 'CH08', 'CAT_OCUP', 'PP10D'])
+    X_train = train[variables]
+    y_train = train['target']
+    X_test = test[variables]
+    y_test = test['target']
+
+    print(train['target'].sum())
+    print(test['target'].sum())
+
+    años = [2004, 2024]
+
+    for año in años:
+        print(f"\n\n===== RESULTADOS PARA ANO4 = {año} =====\n")
+
+        # 3) Filtrar por año
+        X_train = train[train['ANO4'] == año][variables]
+        y_train = train[train['ANO4'] == año]['target']
+        X_test = test[test['ANO4'] == año][variables]
+        y_test = test[test['ANO4'] == año]['target']
+
+        # 4) Regresión Logística
+        logit = LogisticRegression(max_iter=1000)
+        logit.fit(X_train, y_train)
+        y_proba_logit = logit.predict_proba(X_test)[:, 1]
+        y_pred_logit = (y_proba_logit > 0.5).astype(int)
+
+        print("---- LOGIT ----")
+        print(classification_report(y_test, y_pred_logit))
+        print("Accuracy:", accuracy_score(y_test, y_pred_logit))
+
+        # Matriz de confusión
+        cm = confusion_matrix(y_test, y_pred_logit)
+        ConfusionMatrixDisplay(cm).plot()
+        plt.title(f"Logit - Matriz de Confusión Año {año}")
+        plt.show()
+
+        # 5) KNN (k=5)
+        knn = KNeighborsClassifier(n_neighbors=5)
+        knn.fit(X_train, y_train)
+        y_proba_knn = knn.predict_proba(X_test)[:, 1]
+        y_pred_knn = knn.predict(X_test)
+
+        print("---- KNN (k=5) ----")
+        print(classification_report(y_test, y_pred_knn))
+        print("Accuracy:", accuracy_score(y_test, y_pred_knn))
+
+        # Matriz de confusión KNN
+        cm2 = confusion_matrix(y_test, y_pred_knn)
+        ConfusionMatrixDisplay(cm2).plot()
+        plt.title(f"KNN - Matriz de Confusión Año {año}")
+        plt.show()
+
+
+c()
