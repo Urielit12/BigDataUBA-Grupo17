@@ -412,7 +412,7 @@ def c():
     años = [2004, 2024]
 
     for año in años:
-        print(f"\n\n===== RESULTADOS PARA ANO4 = {año} =====\n")
+        print(f"AÑO:{año}")
 
         # 3) Filtrar por año
         X_train = train[train['ANO4'] == año][variables]
@@ -426,7 +426,7 @@ def c():
         y_proba_logit = logit.predict_proba(X_test)[:, 1]
         y_pred_logit = (y_proba_logit > 0.5).astype(int)
 
-        print("---- LOGIT ----")
+        print("LOGIT")
         print(classification_report(y_test, y_pred_logit))
         print("Accuracy:", accuracy_score(y_test, y_pred_logit))
 
@@ -442,7 +442,7 @@ def c():
         y_proba_knn = knn.predict_proba(X_test)[:, 1]
         y_pred_knn = knn.predict(X_test)
 
-        print("---- KNN (k=5) ----")
+        print("KNN con k=5")
         print(classification_report(y_test, y_pred_knn))
         print("Accuracy:", accuracy_score(y_test, y_pred_knn))
 
