@@ -58,13 +58,6 @@ def juntar_varias_filas(row_names, dfs_dict):
             print(f"No se encontró la fila '{row_name}'")
     return resultados
 
-
-# Ejecutamos
-dfs_lim = limpieza()
-filas_a_juntar = ["Servicios", "Industria y construcción", "Comercio",
-                  "Alta calificación (profesional y técnica)", "Baja calificación (operativa y no calificada) "]
-datos_ramas = juntar_varias_filas(filas_a_juntar, dfs_lim)
-
 # Cargamos una base de datos auxiliar, que es el valor del dolar oficial para cada día desde 1970.
 # Limpiamos los datos así me devuelve el valor por cuatrimestre
 
@@ -156,7 +149,11 @@ def graficos(df_unido, nombre_rama):
     plt.tight_layout()
     plt.show()
 
-
+# Ejecutamos
+dfs_lim = limpieza()
+filas_a_juntar = ["Servicios", "Industria y construcción", "Comercio",
+                  "Alta calificación (profesional y técnica)", "Baja calificación (operativa y no calificada) "]
+datos_ramas = juntar_varias_filas(filas_a_juntar, dfs_lim)
 ajuste_dolar()
 ajustados = ajuste_rama(datos_ramas)
 for nombre, df_ajustado in ajustados.items():
