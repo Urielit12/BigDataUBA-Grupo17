@@ -183,12 +183,14 @@ def correcion_horas(horas, ramas):
     df_corregidos = {}
     horas = horas.apply(pd.to_numeric, errors='coerce')
     for nombre_rama, df_rama in ramas.items():
+        df_rama.index = df_rama['Años']
+        print(df_rama)
+        print(horas)
         df_corregidos[nombre_rama] = (df_rama / horas)
-        df_corregidos[nombre_rama] = df_corregidos[nombre_rama].reset_index()
+        df_corregidos[nombre_rama] = df_corregidos[nombre_rama]
         print(df_corregidos[nombre_rama])
 
     return df_corregidos
-
 
 # Ejecutamos la limpieza y elegimos las filas a limpiar.
 dfs_lim = limpieza()
