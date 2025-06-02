@@ -164,10 +164,9 @@ def correcion_horas(horas, ramas):
     for nombre_rama, df_rama in ramas.items():
         df_rama.index = df_rama['Años']
         df_rama = df_rama.drop(columns='Años')
-        print(df_rama)
-        print(horas)
         df_corregidos[nombre_rama] = (df_rama / horas)
         df_corregidos[nombre_rama] = (df_corregidos[nombre_rama]).reset_index()
+        print(f'Rama evualuada: {[nombre_rama]}')
         print(df_corregidos[nombre_rama])
 
     return df_corregidos
@@ -175,24 +174,34 @@ def correcion_horas(horas, ramas):
 
 def graficos_hora(df_unido, nombre_rama):
     x = df_unido['Años']
-    plt.plot(x, df_unido['TotalT3'], color='grey', label="Total T1")
-    plt.plot(x, df_unido['VaronT3'], color='black', label="Masculino T1")
-    plt.plot(x, df_unido['MujerT3'], color='#edbc1c', label="Femenino T1")
-
+    plt.plot(x, df_unido['TotalT3'], color='grey',
+             label="Total T3", linestyle='dashed')
+    plt.plot(x, df_unido['VaronT3'], color='black',
+             label="Masculino T3", marker='o', markersize=4)
+    plt.plot(x, df_unido['MujerT3'], color='#edbc1c',
+             label="Femenino T3", marker='o', markersize=4)
     if nombre_rama == 'Alta_calificación_(profesional_y_técnica)':
         titulo = 'Individuos de alta calificación'
     elif nombre_rama == 'Baja_calificación_(operativa_y_no_calificada)_':
         titulo = 'Individuos de baja calificación'
     else:
         titulo = f'Área de {nombre_rama.replace("_", " ")}'
+
+    yticks = plt.yticks()[0]
+    for y in yticks:
+        plt.axhline(y=y, color='lightgrey', linestyle='--',
+                    linewidth=0.5, zorder=0)
     plt.xlabel("Años")
-    plt.ylabel("Ingreso promedio por hora en Dólares (Valor Oficial)")
+    plt.ylabel("Ingreso semanal promedio en Dólares (Valor Oficial)")
+    plt.xticks(np.arange(2015, 2025, 1))
     plt.title(
         f'{titulo}')
     plt.legend()
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
+
+
 # Ejecutamos la limpieza y elegimos las filas a limpiar.
 dfs_lim = limpieza()
 filas_a_juntar = ["Servicios", "Industria y construcción", "Comercio",
@@ -208,8 +217,9 @@ ajustados = ajuste_rama(datos_ramas)
 # Deja listo las filas de horas trabajadas por año para ser concatenadas.
 horas_df = horas_trab(dfs_lim)
 
-# Concatena las horas trabajadas en un solo dataframe.
+# Concatena las horas trabajadas SEMANALES en un solo dataframe.
 correc_horas_dict = correcion_horas(horas_df, ajustados)
 
 for nombre, df in correc_horas_dict.items():
     graficos_hora(df, nombre)
+
