@@ -129,28 +129,6 @@ def ajuste_rama(datos_rama):
     return resultados
 
 
-def graficos(df_unido, nombre_rama):
-    x = df_unido['Años']
-    plt.plot(x, df_unido['TotalT1'], color='grey', label="Total T1")
-    plt.plot(x, df_unido['VaronT1'], color='blue', label="Masculino T1")
-    plt.plot(x, df_unido['MujerT1'], color='red', label="Femenino T1")
-
-    if nombre_rama == 'Alta_calificación_(profesional_y_técnica)':
-        titulo = 'Ingreso promedio de individuos de alta calificación'
-    elif nombre_rama == 'Baja_calificación_(operativa_y_no_calificada)_':
-        titulo = 'Ingreso promedio de individuos de baja calificación'
-    else:
-        titulo = f'Ingreso promedio en el área de {nombre_rama.replace("_", " ")}'
-    plt.xlabel("Años")
-    plt.ylabel("Ingreso promedio en Dólares (Valor Oficial)")
-    plt.title(
-        f'{titulo}')
-    plt.legend()
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
-
-
 def horas_trab(limpiado):
     horas = []
     df_total = pd.DataFrame()
@@ -180,18 +158,41 @@ def horas_trab(limpiado):
 
 
 def correcion_horas(horas, ramas):
+
     df_corregidos = {}
     horas = horas.apply(pd.to_numeric, errors='coerce')
     for nombre_rama, df_rama in ramas.items():
         df_rama.index = df_rama['Años']
+        df_rama = df_rama.drop(columns='Años')
         print(df_rama)
         print(horas)
         df_corregidos[nombre_rama] = (df_rama / horas)
-        df_corregidos[nombre_rama] = df_corregidos[nombre_rama]
+        df_corregidos[nombre_rama] = (df_corregidos[nombre_rama]).reset_index()
         print(df_corregidos[nombre_rama])
 
     return df_corregidos
 
+
+def graficos_hora(df_unido, nombre_rama):
+    x = df_unido['Años']
+    plt.plot(x, df_unido['TotalT3'], color='grey', label="Total T1")
+    plt.plot(x, df_unido['VaronT3'], color='black', label="Masculino T1")
+    plt.plot(x, df_unido['MujerT3'], color='#edbc1c', label="Femenino T1")
+
+    if nombre_rama == 'Alta_calificación_(profesional_y_técnica)':
+        titulo = 'Individuos de alta calificación'
+    elif nombre_rama == 'Baja_calificación_(operativa_y_no_calificada)_':
+        titulo = 'Individuos de baja calificación'
+    else:
+        titulo = f'Área de {nombre_rama.replace("_", " ")}'
+    plt.xlabel("Años")
+    plt.ylabel("Ingreso promedio por hora en Dólares (Valor Oficial)")
+    plt.title(
+        f'{titulo}')
+    plt.legend()
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
 # Ejecutamos la limpieza y elegimos las filas a limpiar.
 dfs_lim = limpieza()
 filas_a_juntar = ["Servicios", "Industria y construcción", "Comercio",
@@ -211,4 +212,4 @@ horas_df = horas_trab(dfs_lim)
 correc_horas_dict = correcion_horas(horas_df, ajustados)
 
 for nombre, df in correc_horas_dict.items():
-    graficos(df, nombre)
+    graficos_hora(df, nombre)
