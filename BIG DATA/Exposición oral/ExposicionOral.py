@@ -58,6 +58,7 @@ def juntar_varias_filas(row_names, dfs_dict):
             print(f"No se encontró la fila '{row_name}'")
     return resultados
 
+
 # Cargamos una base de datos auxiliar, que es el valor del dolar oficial para cada día desde 1970.
 # Limpiamos los datos así me devuelve el valor por cuatrimestre
 
@@ -149,12 +150,63 @@ def graficos(df_unido, nombre_rama):
     plt.tight_layout()
     plt.show()
 
-# Ejecutamos
+
+def horas_trab(limpiado):
+    horas = []
+    df_total = pd.DataFrame()
+    for año, df in limpiado.items():
+        df.index.name = año
+        df = df.loc[df.index.str.contains("Horas")]
+        df = df.drop(df.columns[df.columns.str.contains("Porcen")], axis=1)
+        if año == 2024:
+            trimestres = ['T1_Total', 'T1_Varon', 'T1_Mujer',
+                          'T2_Total', 'T2_Varon', 'T2_Mujer',
+                          'T3_Total', 'T3_Varon', 'T3_Mujer']
+
+        else:
+            trimestres = ['T1_Total', 'T1_Varon', 'T1_Mujer',
+                          'T2_Total', 'T2_Varon', 'T2_Mujer',
+                          'T3_Total', 'T3_Varon', 'T3_Mujer', 'T4_Total', 'T4_Varon', 'T4_Mujer']
+        df.index = ({año})
+        df.index.name = 'Años'
+        df.columns = trimestres
+        df_total = pd.concat([df_total, df])
+        horas.append(df.iloc[0].tolist())
+    df_total = df_total.apply(pd.to_numeric, errors='coerce').fillna(1)
+    df_total.columns = ['TotalT1', 'VaronT1', 'MujerT1', 'TotalT2', 'VaronT2',
+                        'MujerT2', 'TotalT3', 'VaronT3', 'MujerT3', 'TotalT4', 'VaronT4', 'MujerT4']
+    df_total.to_excel("HorasTrimestres.xlsx", index=True)
+    return df_total
+
+
+def correcion_horas(horas, ramas):
+    df_corregidos = {}
+    horas = horas.apply(pd.to_numeric, errors='coerce')
+    for nombre_rama, df_rama in ramas.items():
+        df_corregidos[nombre_rama] = (df_rama / horas)
+        df_corregidos[nombre_rama] = df_corregidos[nombre_rama].reset_index()
+        print(df_corregidos[nombre_rama])
+
+    return df_corregidos
+
+
+# Ejecutamos la limpieza y elegimos las filas a limpiar.
 dfs_lim = limpieza()
 filas_a_juntar = ["Servicios", "Industria y construcción", "Comercio",
                   "Alta calificación (profesional y técnica)", "Baja calificación (operativa y no calificada) "]
 datos_ramas = juntar_varias_filas(filas_a_juntar, dfs_lim)
+
+# Ajusta la base de dolar para que quede con iguales columnas y filas.
 ajuste_dolar()
+
+# Ajusta las ramas elegidas por el dolar oficial.
 ajustados = ajuste_rama(datos_ramas)
-for nombre, df_ajustado in ajustados.items():
-    graficos(df_ajustado, nombre)
+
+# Deja listo las filas de horas trabajadas por año para ser concatenadas.
+horas_df = horas_trab(dfs_lim)
+
+# Concatena las horas trabajadas en un solo dataframe.
+correc_horas_dict = correcion_horas(horas_df, ajustados)
+
+for nombre, df in correc_horas_dict.items():
+    graficos(df, nombre)
