@@ -205,7 +205,7 @@ def graficos_hora(df_unido, nombre_rama):
         titulo = f'Área de {nombre_rama.replace("_", " ")}'
 
     plt.grid(axis='y', linestyle='--', alpha=0.7)
-    plt.xlabel("Años")
+    plt.xlabel("Tercer Trimestre de cada Año")
     plt.ylabel("Ingreso Mensual Promedio en Dólares (Valor Oficial)")
     plt.xticks(np.arange(2015, 2025, 1))
     plt.title(
@@ -263,7 +263,7 @@ def gap_areas_graf(area):
 
     ax.set_yticks(np.arange(-200, 201, 40))
     ax.grid(axis='y', linestyle='--', alpha=0.7)
-    ax.set_xlabel("Años")
+    ax.set_xlabel("Tercer Trimestre de cada Año")
     ax.set_ylabel("Diferencia Salarial (Mujer - Hombre) Mensual En Dólares")
     ax.set_title('Gap Salarial')
     ax.set_xticks(np.arange(2015, 2025, 1))
@@ -274,6 +274,40 @@ def gap_areas_graf(area):
 
     return df_total
 
+def reg_lineal(df_total):
+    X = df_total['Años'].values.reshape(-1, 1)
+    y = df_total['PromedioGap'].values.reshape(-1, 1)
+
+    model = LinearRegression()
+    model.fit(X, y)
+
+    # Predicciones actuales
+    y_pred = model.predict(X)
+
+    # Predicciones futuras
+    futuros = np.array([[2025], [2026], [2027]])
+    pred_fut = model.predict(futuros)
+
+    # Mostrar predicciones futuras
+    for año, gap in zip(futuros.flatten(), pred_fut.flatten()):
+        print(f"Gap proyectado para {año}: {gap:.2f} dólares")
+
+    # Gráfico
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(df_total['Años'], df_total['PromedioGap'],
+            marker='o', label='Gap real', color='black')
+    ax.plot(df_total['Años'], y_pred, color='#edbc1c',
+            linestyle='--', label='Tendencia lineal')
+    ax.set_yticks(np.arange(-200, 201, 40))
+    ax.grid(axis='y', linestyle='--', alpha=0.7)
+    ax.set_xlabel("Tercer Trimestre de cada Año")
+    ax.set_ylabel("Diferencia Salarial (Mujer - Hombre) Mensual En Dólares")
+    ax.set_title('Gap Salarial')
+    ax.set_xticks(np.arange(2015, 2025, 1))
+    ax.legend()
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
 
     # Ejecutamos la limpieza y elegimos las filas a limpiar.
 dfs_lim = limpieza()
