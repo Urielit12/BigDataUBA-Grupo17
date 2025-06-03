@@ -256,7 +256,7 @@ def gap_areas_graf(area):
 
     ax.axhline(0, color='black', linewidth=1)
 
-    ax.fill_between(x, y_prom, 0, where=(y_prom > 0), facecolor='#2cbf62',
+    ax.fill_between(x, y_prom, 0, where=(y_prom > 0), facecolor='#fcba03',
                     alpha=0.5, interpolate=True)
     ax.fill_between(x, y_prom, 0, where=(y_prom < 0), facecolor='#925bc9',
                     alpha=0.5, interpolate=True)
