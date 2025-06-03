@@ -187,10 +187,7 @@ def graficos_hora(df_unido, nombre_rama):
     else:
         titulo = f'Área de {nombre_rama.replace("_", " ")}'
 
-    yticks = plt.yticks()[0]
-    for y in yticks:
-        plt.axhline(y=y, color='lightgrey', linestyle='--',
-                    linewidth=0.5, zorder=0)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.xlabel("Años")
     plt.ylabel("Ingreso semanal promedio en Dólares (Valor Oficial)")
     plt.xticks(np.arange(2015, 2025, 1))
@@ -200,6 +197,60 @@ def graficos_hora(df_unido, nombre_rama):
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
+
+
+def gap_areas_graf(area):
+    dataframes = {}
+    df_total = pd.DataFrame()
+    for rama, df in area.items():
+        if 'Calif' in rama:
+            pass
+        else:
+            df.index = df['Años']
+            rama = rama.replace("_", " ")
+            df[f'GapT3{rama}'] = df['MujerT3'] - df['VaronT3']
+            dataframes[rama] = df[[f'GapT3{rama}']]
+            print(df[f'GapT3{rama}'])
+    df_total = pd.concat(dataframes.values(), axis=1).reset_index()
+
+    gap_columns = [col for col in df_total.columns if col.startswith('GapT3')]
+    df_total['PromedioGap'] = df_total[gap_columns].mean(axis=1)
+    prom_gap = (df_total['PromedioGap']).mean()
+
+    x = df_total['Años']
+    y1 = df_total['GapT3Servicios']
+    y_prom = df_total['PromedioGap']
+
+    fig, ax = plt.subplots()
+
+    ax.set_ylim(-7, 7)
+    ax.plot(x, y1, color='grey', label="Servicios",
+            markersize=4, linestyle='dashed', alpha=0.5)
+    ax.plot(x, y_prom, color='Black', label="Promedio GAP",
+            marker='o', markersize=4)
+
+    ax.axhline(prom_gap, linestyle='dashed',
+               linewidth=1, color='red',
+               label='Promedio General')
+    ax.axhline(0, color='black', linewidth=1)
+
+    ax.fill_between(x, y_prom, 0, where=(y_prom > 0), facecolor='green',
+                    alpha=0.5, interpolate=True)
+    ax.fill_between(x, y_prom, 0, where=(y_prom < 0), facecolor='red',
+                    alpha=0.5, interpolate=True)
+
+    ax.set_yticks(np.arange(-7, 8, 1))
+    ax.grid(axis='y', linestyle='--', alpha=0.7)
+    ax.set_xlabel("Años")
+    ax.set_ylabel("Diferencia salarial (Mujer - Hombre) En dolares por semana")
+    ax.set_title('Gap salarial en sectores')
+    ax.set_xticks(np.arange(2015, 2025, 1))
+    ax.legend()
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+    return df_total
 
 
 # Ejecutamos la limpieza y elegimos las filas a limpiar.
@@ -223,3 +274,5 @@ correc_horas_dict = correcion_horas(horas_df, ajustados)
 for nombre, df in correc_horas_dict.items():
     graficos_hora(df, nombre)
 
+# Ejecuta el gráfico de gap salarial.
+gap_areas_graf(correc_horas_dict)
