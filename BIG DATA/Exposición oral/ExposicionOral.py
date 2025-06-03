@@ -216,6 +216,9 @@ def gap_areas_graf(area):
     gap_columns = [col for col in df_total.columns if col.startswith('GapT3')]
     df_total['PromedioGap'] = df_total[gap_columns].mean(axis=1)
     prom_gap = (df_total['PromedioGap']).mean()
+    print(f'El gap semanal promedio es {prom_gap}.')
+    print(f'El gap mensual promedio es {(prom_gap) * 4.2}.')
+    print(f'El gap anual promedio es {(prom_gap) * 4.2 * 12}.')
 
     x = df_total['Años']
     y1 = df_total['GapT3Servicios']
@@ -242,8 +245,8 @@ def gap_areas_graf(area):
     ax.set_yticks(np.arange(-7, 8, 1))
     ax.grid(axis='y', linestyle='--', alpha=0.7)
     ax.set_xlabel("Años")
-    ax.set_ylabel("Diferencia salarial (Mujer - Hombre) En dolares por semana")
-    ax.set_title('Gap salarial en sectores')
+    ax.set_ylabel("Diferencia Salarial (Mujer - Hombre) En Dólares por Semana")
+    ax.set_title('Gap Salarial')
     ax.set_xticks(np.arange(2015, 2025, 1))
     ax.legend()
     plt.xticks(rotation=45)
@@ -274,5 +277,4 @@ correc_horas_dict = correcion_horas(horas_df, ajustados)
 for nombre, df in correc_horas_dict.items():
     graficos_hora(df, nombre)
 
-# Ejecuta el gráfico de gap salarial.
 gap_areas_graf(correc_horas_dict)
