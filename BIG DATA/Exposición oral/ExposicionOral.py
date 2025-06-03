@@ -242,17 +242,17 @@ def gap_areas_graf(area):
     fig, ax = plt.subplots()
 
     ax.set_ylim(-7, 7)
-    ax.plot(x, y1, color='#39a4b3', label="Servicios",
+    ax.plot(x, y1, color='#39a4b3', label="GAP Servicios",
             markersize=4, linestyle='dashed', alpha=0.5)
     ax.plot(x, y_prom, color='Black', label="Promedio GAP",
             marker='o', markersize=4)
 
     ax.axhline(prom_gap, linestyle='dashed',
                linewidth=1, color='red',
-               label='Promedio General')
+               label='GAP Promedio General')
     ax.axhline(prom_gap_serv, linestyle='dashed',
                linewidth=1, color='#39a4b3',
-               label='Promedio Servicios', alpha=0.5)
+               label='GAP Promedio Servicios', alpha=0.5)
 
     ax.axhline(0, color='black', linewidth=1)
 
