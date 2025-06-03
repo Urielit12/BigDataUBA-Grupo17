@@ -158,15 +158,32 @@ def horas_trab(limpiado):
 
 
 def correcion_horas(horas, ramas):
-
     df_corregidos = {}
-    horas = horas.apply(pd.to_numeric, errors='coerce')
+    # Convertimos horas semanales a mensuales (multiplicar por 4.33 semanas/mes)
+    horas_mensuales = horas * 4.33
+    horas_mensuales = horas_mensuales.apply(pd.to_numeric, errors='coerce')
+
     for nombre_rama, df_rama in ramas.items():
         df_rama.index = df_rama['Años']
         df_rama = df_rama.drop(columns='Años')
-        df_corregidos[nombre_rama] = (df_rama / horas)
-        df_corregidos[nombre_rama] = (df_corregidos[nombre_rama]).reset_index()
-        print(f'Rama evualuada: {[nombre_rama]}')
+        # Calculamos salario por hora dividiendo por horas mensuales
+        df_salario_por_hora = (df_rama / horas_mensuales)
+        # Ajustamos a un número fijo de horas mensuales (usamos el promedio de horas totales por trimestre)
+        horas_referencia = horas_mensuales[[
+            col for col in horas_mensuales.columns if 'Total' in col]].mean(axis=1)
+        df_corregidos[nombre_rama] = pd.DataFrame()
+        for col in df_salario_por_hora.columns:
+            if 'Total' in col:
+                df_corregidos[nombre_rama][col] = df_salario_por_hora[col] * \
+                    horas_referencia
+            elif 'Varon' in col:
+                df_corregidos[nombre_rama][col] = df_salario_por_hora[col] * \
+                    horas_referencia
+            elif 'Mujer' in col:
+                df_corregidos[nombre_rama][col] = df_salario_por_hora[col] * \
+                    horas_referencia
+        df_corregidos[nombre_rama] = df_corregidos[nombre_rama].reset_index()
+        print(f'Rama evaluada: {nombre_rama}')
         print(df_corregidos[nombre_rama])
 
     return df_corregidos
@@ -189,7 +206,7 @@ def graficos_hora(df_unido, nombre_rama):
 
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.xlabel("Años")
-    plt.ylabel("Ingreso semanal promedio en Dólares (Valor Oficial)")
+    plt.ylabel("Ingreso Mensual Promedio en Dólares (Valor Oficial)")
     plt.xticks(np.arange(2015, 2025, 1))
     plt.title(
         f'{titulo}')
@@ -216,18 +233,16 @@ def gap_areas_graf(area):
     gap_columns = [col for col in df_total.columns if col.startswith('GapT3')]
     df_total['PromedioGap'] = df_total[gap_columns].mean(axis=1)
     prom_gap = (df_total['PromedioGap']).mean()
-    print(f'El gap semanal promedio es {prom_gap}.')
-    print(f'El gap mensual promedio es {(prom_gap) * 4.2}.')
-    print(f'El gap anual promedio es {(prom_gap) * 4.2 * 12}.')
+    prom_gap_serv = (df_total['GapT3Servicios']).mean()
+    print(f'El gap mensual promedio es {prom_gap}.')
 
     x = df_total['Años']
     y1 = df_total['GapT3Servicios']
     y_prom = df_total['PromedioGap']
-
     fig, ax = plt.subplots()
 
     ax.set_ylim(-7, 7)
-    ax.plot(x, y1, color='grey', label="Servicios",
+    ax.plot(x, y1, color='#39a4b3', label="Servicios",
             markersize=4, linestyle='dashed', alpha=0.5)
     ax.plot(x, y_prom, color='Black', label="Promedio GAP",
             marker='o', markersize=4)
@@ -235,17 +250,21 @@ def gap_areas_graf(area):
     ax.axhline(prom_gap, linestyle='dashed',
                linewidth=1, color='red',
                label='Promedio General')
+    ax.axhline(prom_gap_serv, linestyle='dashed',
+               linewidth=1, color='#39a4b3',
+               label='Promedio Servicios', alpha=0.5)
+
     ax.axhline(0, color='black', linewidth=1)
 
-    ax.fill_between(x, y_prom, 0, where=(y_prom > 0), facecolor='green',
+    ax.fill_between(x, y_prom, 0, where=(y_prom > 0), facecolor='#2cbf62',
                     alpha=0.5, interpolate=True)
-    ax.fill_between(x, y_prom, 0, where=(y_prom < 0), facecolor='red',
+    ax.fill_between(x, y_prom, 0, where=(y_prom < 0), facecolor='#925bc9',
                     alpha=0.5, interpolate=True)
 
-    ax.set_yticks(np.arange(-7, 8, 1))
+    ax.set_yticks(np.arange(-200, 201, 40))
     ax.grid(axis='y', linestyle='--', alpha=0.7)
     ax.set_xlabel("Años")
-    ax.set_ylabel("Diferencia Salarial (Mujer - Hombre) En Dólares por Semana")
+    ax.set_ylabel("Diferencia Salarial (Mujer - Hombre) Mensual En Dólares")
     ax.set_title('Gap Salarial')
     ax.set_xticks(np.arange(2015, 2025, 1))
     ax.legend()
@@ -256,7 +275,7 @@ def gap_areas_graf(area):
     return df_total
 
 
-# Ejecutamos la limpieza y elegimos las filas a limpiar.
+    # Ejecutamos la limpieza y elegimos las filas a limpiar.
 dfs_lim = limpieza()
 filas_a_juntar = ["Servicios", "Industria y construcción", "Comercio",
                   "Alta calificación (profesional y técnica)", "Baja calificación (operativa y no calificada) "]
