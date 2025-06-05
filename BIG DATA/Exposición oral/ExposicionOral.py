@@ -309,7 +309,39 @@ def reg_lineal(df_total):
     plt.tight_layout()
     plt.show()
 
-    # Ejecutamos la limpieza y elegimos las filas a limpiar.
+def regresiones_sectores(df_total):
+    # Selecciona todas las columnas que contienen 'GapT3'
+    gap_columns = [col for col in df_total.columns if col.startswith('GapT3')]
+
+    for col in gap_columns:
+        X = df_total['Años'].values.reshape(-1, 1)
+        y = df_total[col].values.reshape(-1, 1)
+
+        model = LinearRegression()
+        model.fit(X, y)
+        y_pred = model.predict(X)
+        nombre_sector = col.replace('GapT3', '')
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.axhline(0, color='black', linewidth=1)
+        ax.plot(df_total['Años'], y, marker='o',
+                label=f'Área de {nombre_sector}', color='black')
+        ax.plot(df_total['Años'], y_pred, color='green',
+                label='Tendencia', linestyle='dashed')
+
+        ax.set_yticks(np.arange(-200, 201, 40))
+        ax.grid(axis='y', linestyle='--', alpha=0.7)
+        ax.set_xlabel("Tercer Trimestre de cada Año")
+        ax.set_ylabel(
+            "Diferencia Salarial (Mujer - Hombre) Mensual En Dólares")
+        ax.set_title(f'Gap Salarial - {nombre_sector}')
+        ax.set_xticks(np.arange(2015, 2025, 1))
+        ax.legend()
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.show()
+
+
 dfs_lim = limpieza()
 filas_a_juntar = ["Servicios", "Industria y construcción", "Comercio",
                   "Alta calificación (profesional y técnica)", "Baja calificación (operativa y no calificada) "]
@@ -330,4 +362,8 @@ correc_horas_dict = correcion_horas(horas_df, ajustados)
 for nombre, df in correc_horas_dict.items():
     graficos_hora(df, nombre)
 
-gap_areas_graf(correc_horas_dict)
+dataframes = gap_areas_graf(correc_horas_dict)
+
+reg_lineal(dataframes)
+
+regresiones_sectores(dataframes)
