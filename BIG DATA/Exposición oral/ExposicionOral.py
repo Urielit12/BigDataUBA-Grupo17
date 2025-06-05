@@ -281,29 +281,35 @@ def reg_lineal(df_total):
     model = LinearRegression()
     model.fit(X, y)
 
-    # Predicciones actuales
     y_pred = model.predict(X)
 
     # Predicciones futuras
     futuros = np.array([[2025], [2026], [2027]])
     pred_fut = model.predict(futuros)
-
-    # Mostrar predicciones futuras
     for año, gap in zip(futuros.flatten(), pred_fut.flatten()):
         print(f"Gap proyectado para {año}: {gap:.2f} dólares")
 
-    # Gráfico
+    X_total = np.vstack([X, futuros])
+    y_total_pred = model.predict(X_total)
+
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(df_total['Años'], df_total['PromedioGap'],
             marker='o', label='Gap real', color='black')
-    ax.plot(df_total['Años'], y_pred, color='#edbc1c',
+
+    ax.plot(X_total, y_total_pred, color='#edbc1c',
             linestyle='--', label='Tendencia lineal')
+
+    # Estimaciones
+    ax.scatter(futuros, pred_fut, color='red',
+               marker='x', label='Proyección futura')
+
+    ax.axhline(0, color='black', linewidth=1)
     ax.set_yticks(np.arange(-200, 201, 40))
     ax.grid(axis='y', linestyle='--', alpha=0.7)
-    ax.set_xlabel("Tercer Trimestre de cada Año")
+    ax.set_xlabel("Años")
     ax.set_ylabel("Diferencia Salarial (Mujer - Hombre) Mensual En Dólares")
-    ax.set_title('Gap Salarial')
-    ax.set_xticks(np.arange(2015, 2025, 1))
+    ax.set_title('Gap Salarial con Regresión Lineal y Proyecciones')
+    ax.set_xticks(np.arange(2015, 2028, 1))
     ax.legend()
     plt.xticks(rotation=45)
     plt.tight_layout()
